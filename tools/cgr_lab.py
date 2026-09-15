@@ -234,6 +234,20 @@ def node_spec(kind, name, data, settings, compute):
                 "usage": "Automation station. Files in /root/cgr",
             },
         }
+    if kind == "host":
+        return {
+            "name": name, "node_type": "docker", "compute_id": compute,
+            "symbol": ":/symbols/classic/server.svg" if data.get("role") == "server"
+            else ":/symbols/classic/computer.svg",
+            "properties": {
+                "image": c["netauto_image"],
+                "adapters": int(data.get("ports", 2)),
+                "console_type": "telnet",
+                "environment": "CGR_ROLE=host",
+                "usage": "Linux host (Debian). Data interface: eth1. "
+                         "ip addr / ip route, or edit /etc/network/interfaces.",
+            },
+        }
     if kind == "vpcs":
         return {"name": name, "node_type": "vpcs", "compute_id": compute,
                 "symbol": ":/symbols/classic/computer.svg",
@@ -484,6 +498,16 @@ def _populate(api, args, settings, topo, name, pid, cid, mgmt):
                 api.post(f"/projects/{pid}/nodes/{nid}/files/etc/frr/frr.conf", data=conf)
         elif kind == "netauto":
             content = mgmt_interfaces_file(d["mgmt"], mgmt.prefixlen)
+            api.post(f"/projects/{pid}/nodes/{nid}/files/etc/network/interfaces", data=content)
+        elif kind == "host":
+            content = "auto lo\niface lo inet loopback\n"
+            if d.get("ip"):
+                ip = ipaddress.ip_interface(d["ip"])
+                dev = d.get("dev", "eth1")
+                content += (f"\nauto {dev}\niface {dev} inet static\n    address {ip.ip}\n"
+                            f"    netmask {ip.netmask}\n")
+                if d.get("gw"):
+                    content += f"    gateway {d['gw']}\n"
             api.post(f"/projects/{pid}/nodes/{nid}/files/etc/network/interfaces", data=content)
         elif kind == "vpcs" and d.get("ip"):
             script = f"set pcname {nname}\nip {d['ip']}" + (f" {d['gw']}" if d.get("gw") else "") + "\n"

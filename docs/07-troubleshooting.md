@@ -41,6 +41,11 @@ must include the eth0 address (`nv set system api listening-address 192.168.100.
 The GNS3 VM needs Internet access (through its NAT network adapter in VMware). The image
 name in `tools/lab_settings.yml` must match what your instructor published.
 
+### FRR container: bonds or VLANs fail with "Operation not supported" / "Unknown device type"
+The kernel modules are not loaded in the GNS3 VM (or on your Linux host). Open the GNS3 VM
+console → *Shell* (Linux: a terminal) and run `sudo modprobe -a bonding 8021q dummy`, then
+`ifreload -a` again on the node.
+
 ### FRR container: `ifreload -a` errors
 Read the message — it points at the line in `/etc/network/interfaces`. Indent option lines
 with spaces, and keep the management block at the top untouched.

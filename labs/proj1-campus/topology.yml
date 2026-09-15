@@ -1,0 +1,56 @@
+# Converted from NVIDIA Air export 'bba6da0e-ProjectCampusNetwork.json' by tools/air2gns3.py
+# Port names are the same as in Air. Build with --lite to use FRR containers.
+name: proj1-campus
+mgmt_subnet: 192.168.200.0/24
+mgmt_switch_pos: [-700, -400]
+nodes:
+  Access1: {kind: cumulus, role: switch, ports: 7, mgmt: 192.168.200.13, x: -208, y: 278}
+  Access2: {kind: cumulus, role: switch, ports: 7, mgmt: 192.168.200.11, x: 120, y: 290}
+  BorderRouter: {kind: cumulus, role: router, ports: 6, mgmt: 192.168.200.9, x: 160, y: -449}
+  DatacenterRack: {kind: cumulus, role: switch, ports: 12, mgmt: 192.168.200.12, x: -137, y: -466}
+  Distribution1: {kind: cumulus, role: switch, ports: 11, mgmt: 192.168.200.14, x: -134, y: 35}
+  Distribution2: {kind: cumulus, role: switch, ports: 11, mgmt: 192.168.200.7, x: 120, y: 35}
+  SpineRouter1: {kind: cumulus, role: router, ports: 11, mgmt: 192.168.200.5, x: -144, y: -123}
+  SpineRouter2: {kind: cumulus, role: router, ports: 13, mgmt: 192.168.200.3, x: 137, y: -210}
+  Ubuntu-Server-5: {kind: host, role: server, x: -435, y: -550}
+  UbuntuInternet: {kind: host, role: server, x: 375, y: -474}
+  UserUbuntu1: {kind: host, x: -296, y: 462}
+  UserUbuntu2: {kind: host, x: -134, y: 545}
+  UserUbuntu3: {kind: host, x: 123, y: 550}
+  UserUbuntu4: {kind: host, x: 435, y: 543}
+  netauto: {kind: netauto, mgmt: 192.168.200.254, x: -700, y: -550}
+links:
+- ['Access1:swp1', 'Distribution1:swp1']
+- ['Access1:swp2', 'Distribution1:swp2']
+- ['Access1:swp3', 'Distribution2:swp3']
+- ['Access1:swp4', 'Distribution2:swp4']
+- ['Access1:swp5', 'UserUbuntu1:eth1']
+- ['Access1:swp6', 'UserUbuntu2:eth1']
+- ['Access2:swp1', 'Distribution2:swp1']
+- ['Access2:swp2', 'Distribution2:swp2']
+- ['Access2:swp3', 'Distribution1:swp3']
+- ['Access2:swp4', 'Distribution1:swp4']
+- ['Access2:swp5', 'UserUbuntu3:eth1']
+- ['Access2:swp6', 'UserUbuntu4:eth1']
+- ['BorderRouter:swp1', 'SpineRouter1:swp3']
+- ['BorderRouter:swp2', 'SpineRouter1:swp4']
+- ['BorderRouter:swp3', 'SpineRouter2:swp3']
+- ['BorderRouter:swp4', 'SpineRouter2:swp4']
+- ['BorderRouter:swp5', 'UbuntuInternet:eth1']
+- ['DatacenterRack:swp1', 'Ubuntu-Server-5:eth1']
+- ['DatacenterRack:swp10', 'SpineRouter2:swp11']
+- ['DatacenterRack:swp11', 'SpineRouter2:swp12']
+- ['DatacenterRack:swp5', 'SpineRouter1:swp5']
+- ['DatacenterRack:swp6', 'SpineRouter1:swp6']
+- ['Distribution1:swp10', 'SpineRouter2:swp10']
+- ['Distribution1:swp5', 'Distribution2:swp5']
+- ['Distribution1:swp6', 'Distribution2:swp6']
+- ['Distribution1:swp7', 'SpineRouter1:swp7']
+- ['Distribution1:swp8', 'SpineRouter1:swp8']
+- ['Distribution1:swp9', 'SpineRouter2:swp9']
+- ['Distribution2:swp10', 'SpineRouter1:swp10']
+- ['Distribution2:swp7', 'SpineRouter2:swp7']
+- ['Distribution2:swp8', 'SpineRouter2:swp8']
+- ['Distribution2:swp9', 'SpineRouter1:swp9']
+- ['SpineRouter1:swp1', 'SpineRouter2:swp1']
+- ['SpineRouter1:swp2', 'SpineRouter2:swp2']

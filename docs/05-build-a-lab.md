@@ -88,5 +88,10 @@ links:
   - [sw1:swp2, pc1:e0]
 ```
 
-Kinds: `cumulus`, `frr`, `netauto`, `vpcs`, `switch` (plain GNS3 Ethernet switch), `nat`.
+Kinds: `cumulus`, `frr`, `netauto`, `host` (small Linux container, data port `eth1`; optional `ip`, `gw`),
+`vpcs`, `switch` (plain GNS3 Ethernet switch), `nat`.
+
+**Coming from NVIDIA Air?** Export the simulation as JSON and convert it:
+`python tools/air2gns3.py MyLab.json -o labs/mylab/topology.yml --name mylab`
+(same node and port names; Ubuntu nodes become `host` containers).
 Optional per node: `ram`, `cpus`, `ports`.

@@ -1,0 +1,23 @@
+# Project 1, part 2 - OSPF multi-area (redrawn from the 2025/2026 statement figure)
+# Build with --lite for Apple Silicon (all FRR containers, ~0.5 GB RAM in total).
+name: proj1-ospf
+mgmt_subnet: 192.168.200.0/24
+mgmt_switch_pos: [-650, -350]
+nodes:
+  R4:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.34, x: -230, y: -330}
+  R5:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.35, x: -470, y: -120}
+  SW:  {kind: cumulus, role: switch, ports: 4, mgmt: 192.168.200.30, x: -230, y: -120}
+  R1:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.31, x: 20,   y: -120}
+  R2:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.32, x: 20,   y: 150}
+  R3:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.33, x: 330,  y: 150}
+  R6:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.36, x: -470, y: 60}
+  R7:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.37, x: -470, y: 250}
+  netauto: {kind: netauto, mgmt: 192.168.200.254, x: -650, y: -480}
+links:
+  - [R5:swp1, SW:swp1]     # 192.168.23.0/24  area 32 (broadcast segment)
+  - [R4:swp1, SW:swp2]     # 192.168.23.0/24  area 32
+  - [R1:swp1, SW:swp3]     # 192.168.23.0/24  area 32
+  - [R1:swp2, R2:swp1]     # 192.168.34.0/24  area 0
+  - [R2:swp2, R3:swp1]     # 192.168.45.0/24  area 0
+  - [R5:swp2, R6:swp1]     # 192.168.13.0/24  area 43
+  - [R6:swp2, R7:swp1]     # 192.168.12.0/24  area 43

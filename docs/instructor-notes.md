@@ -45,6 +45,26 @@ The console bootstrap logic was tested against a simulated Cumulus login sequenc
 - [ ] The Debian `ifupdown2` package path used by `images/frr/Dockerfile` (the local test used
       ifupdown2 from source).
 
+## Project 1 in lite mode (Apple Silicon)
+
+`labs/proj1-*` are the 2025/2026 Air topologies (converted with `tools/air2gns3.py`, same names
+and ports; the OSPF one redrawn from the statement figure). Verified in lite mode on the test
+server: all three build and run **at the same time** in ~2.3 GB; the complete OSPF statement was
+solved with FRR (virtual link through area 32, `area 20 range 172.16.9.0/25`, DR on the R1–R4–R5
+segment, `default-information originate always`) with full reachability — the solution configs
+are in the separate instructor package, not in this repository.
+
+Things lite mode changes for students:
+* **No NVUE.** The Project 1 statement title says "configuration in Cumulus using NVUE". Mac
+  students do the same tasks in ifupdown2 + vtysh (`labs/LITE-CHEATSHEET.md`). If NVUE itself is an
+  assessment objective, they can keep using **NVIDIA Air** (cloud, works from any laptop), as in
+  2025/2026, and use GNS3 lite only for practice — or accept either syntax in the deliverables.
+* Kernel STP instead of RSTP; loopback addresses advertised as /32.
+* Bonds/VLAN sub-interfaces need the `bonding`/`8021q` kernel modules in the GNS3 VM (see
+  troubleshooting). Not testable in the build environment — check once on the ARM64 VM.
+* In OSPF single-area designs, "summarise at the distribution switches" requires the
+  distribution switches to be ABRs (or ASBRs with `summary-address`); FRR behaves like Cumulus here.
+
 ## Design decisions
 
 * **GNS3 2.2.54 for everyone** — last 2.2 release with an ARM64 GNS3 VM; `cgr_lab.py` uses the
@@ -55,7 +75,8 @@ The console bootstrap logic was tested against a simulated Cumulus login sequenc
   (Cumulus' own tool) keeps the "classic Cumulus" interface syntax in lite mode.
 * **IS-IS on FRR only** — NVUE does not model IS-IS; configuring FRR by hand on Cumulus
   conflicts with NVUE owning `frr.conf`.
-* **Management network** 192.168.100.0/24 in every lab so the inventory never changes.
+* **Management network** 192.168.100.0/24 in labs 00–04 so the inventory never changes; the
+  `proj1-*` labs keep Air's 192.168.200.0/24 addresses (netauto = .254).
 * **Password `CumulusLab1!`** — Cumulus 5.x forces a change at first login and the API refuses
   the factory password; it satisfies the default password-complexity rules.
 

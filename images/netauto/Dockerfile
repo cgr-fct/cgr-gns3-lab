@@ -17,6 +17,7 @@ RUN set -eux; \
       python3 python3-requests python3-yaml python3-jinja2 python3-jsonschema \
       python3-paramiko python3-venv python3-pip \
       curl jq openssh-client sshpass iputils-ping iproute2 traceroute \
+      tcpdump iperf3 netcat-openbsd \
       git nano vim-tiny less bash-completion ca-certificates; \
     rm -rf /var/lib/apt/lists/*
 
@@ -26,7 +27,9 @@ RUN if [ -n "$EXTRA_PIP" ]; then pip3 install --no-cache-dir --break-system-pack
 COPY automation /root/cgr
 COPY images/netauto/motd /etc/motd
 RUN chmod +x /root/cgr/*.py /root/cgr/*.sh 2>/dev/null || true; \
-    printf '%s\n' 'cat /etc/motd' 'cd /root/cgr' 'export PYTHONDONTWRITEBYTECODE=1' >> /root/.bashrc
+    printf '%s\n' \
+      'if [ "$CGR_ROLE" = host ]; then echo; echo "  Linux host $(hostname) - data interface: eth1  (ip addr, ip route, ping, traceroute, python3 -m http.server)"; echo; cd /root; else cat /etc/motd; cd /root/cgr; fi' \
+      'export PYTHONDONTWRITEBYTECODE=1' >> /root/.bashrc
 
 LABEL org.opencontainers.image.title="cgr-netauto" \
       org.opencontainers.image.description="CGR GNS3 lab automation station (Python, YAML, Jinja2, REST)"
