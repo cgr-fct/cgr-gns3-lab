@@ -1,0 +1,12 @@
+# Lab 00 - First contact: two Cumulus VX switches, two PCs, one automation station
+name: lab00-first-contact
+nodes:
+  sw1:     {kind: cumulus, role: switch, mgmt: 192.168.100.11, x: -150, y: 0}
+  sw2:     {kind: cumulus, role: switch, mgmt: 192.168.100.12, x: 150,  y: 0}
+  pc1:     {kind: vpcs, ip: 10.0.0.1/24, x: -150, y: 200}
+  pc2:     {kind: vpcs, ip: 10.0.0.2/24, x: 150,  y: 200}
+  netauto: {kind: netauto, mgmt: 192.168.100.10, x: -450, y: -80}
+links:
+  - [sw1:swp1, sw2:swp1]
+  - [sw1:swp2, pc1:e0]
+  - [sw2:swp2, pc2:e0]

@@ -1,0 +1,9 @@
+# Bootstrap for e2 - paste into the e2 console after logging in
+# (first login: cumulus / cumulus, then set the new password to CumulusLab1!)
+# `python tools/cgr_lab.py bootstrap lab04-bgp` does all of this for you.
+nv set system hostname e2
+nv unset interface eth0 ip address dhcp
+nv set interface eth0 ip address 192.168.100.42/24
+nv set system api listening-address 192.168.100.42
+nv config apply -y
+nv config save

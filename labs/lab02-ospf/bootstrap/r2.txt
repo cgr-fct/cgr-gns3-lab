@@ -1,0 +1,9 @@
+# Bootstrap for r2 - paste into the r2 console after logging in
+# (first login: cumulus / cumulus, then set the new password to CumulusLab1!)
+# `python tools/cgr_lab.py bootstrap lab02-ospf` does all of this for you.
+nv set system hostname r2
+nv unset interface eth0 ip address dhcp
+nv set interface eth0 ip address 192.168.100.32/24
+nv set system api listening-address 192.168.100.32
+nv config apply -y
+nv config save

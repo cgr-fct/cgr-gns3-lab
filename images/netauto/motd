@@ -1,0 +1,7 @@
+
+  CGR automation station  -  eth0 is on the management network (192.168.100.0/24)
+  Files: /root/cgr    (see README.md there)
+    ./nvue.py show sw1 /interface          # read state over the NVUE REST API
+    ./apply_intent.py intent/lab00.yml     # push YAML intent to the devices
+    ./curl_examples.sh sw1                 # raw REST calls with curl
+

@@ -1,0 +1,19 @@
+# ISP2 (AS 65102) - pre-configured by the instructor, do not change
+auto lo
+iface lo inet loopback
+    address 10.255.102.1/32
+
+auto swp1
+iface swp1
+    alias to customer e2
+    address 198.51.100.5/30
+
+auto swp2
+iface swp2
+    alias peering with isp1
+    address 198.51.100.10/30
+
+auto swp3
+iface swp3
+    alias Internet server LAN
+    address 203.0.113.1/24

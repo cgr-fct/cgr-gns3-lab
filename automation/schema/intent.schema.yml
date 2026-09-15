@@ -1,0 +1,114 @@
+# JSON Schema (written in YAML) for the CGR "intent" files.
+# It plays the same role a YANG module plays for NETCONF/RESTCONF:
+# it defines which data is valid BEFORE anything is sent to a device.
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: CGR network intent
+type: object
+required: [devices]
+additionalProperties: false
+properties:
+  description: {type: string}
+  devices:
+    type: object
+    additionalProperties: {$ref: "#/$defs/device"}
+
+$defs:
+  ipv4_prefix:
+    type: string
+    pattern: "^([0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$"
+  ipv4:
+    type: string
+    pattern: "^([0-9]{1,3}\\.){3}[0-9]{1,3}$"
+  vlan_id: {type: integer, minimum: 1, maximum: 4094}
+  area:
+    oneOf:
+      - {type: integer, minimum: 0}
+      - {$ref: "#/$defs/ipv4"}
+
+  device:
+    type: object
+    additionalProperties: false
+    properties:
+      hostname: {type: string, pattern: "^[A-Za-z][A-Za-z0-9-]{0,62}$"}
+      loopback: {$ref: "#/$defs/ipv4_prefix"}
+      vlans:
+        type: array
+        items: {$ref: "#/$defs/vlan_id"}
+        uniqueItems: true
+      interfaces:
+        type: object
+        propertyNames: {pattern: "^swp[0-9]+$"}
+        additionalProperties: {$ref: "#/$defs/interface"}
+      svis:
+        type: object
+        propertyNames: {pattern: "^[0-9]+$"}
+        additionalProperties:
+          type: object
+          additionalProperties: false
+          required: [ip]
+          properties:
+            ip: {$ref: "#/$defs/ipv4_prefix"}
+      ospf: {$ref: "#/$defs/ospf"}
+      bgp: {$ref: "#/$defs/bgp"}
+
+  interface:
+    type: object
+    additionalProperties: false
+    properties:
+      description: {type: string}
+      mode: {enum: [access, trunk, routed]}
+      vlan: {$ref: "#/$defs/vlan_id"}          # access VLAN
+      vlans:                                   # allowed VLANs on a trunk
+        type: array
+        items: {$ref: "#/$defs/vlan_id"}
+      ip: {$ref: "#/$defs/ipv4_prefix"}        # routed port
+    allOf:
+      - if: {properties: {mode: {const: access}}, required: [mode]}
+        then: {required: [vlan]}
+      - if: {properties: {mode: {const: trunk}}, required: [mode]}
+        then: {required: [vlans]}
+      - if: {properties: {mode: {const: routed}}, required: [mode]}
+        then: {required: [ip]}
+
+  ospf:
+    type: object
+    additionalProperties: false
+    required: [router_id, interfaces]
+    properties:
+      router_id: {$ref: "#/$defs/ipv4"}
+      interfaces:
+        type: object
+        additionalProperties:
+          type: object
+          additionalProperties: false
+          required: [area]
+          properties:
+            area: {$ref: "#/$defs/area"}
+            network_type: {enum: [point-to-point, broadcast]}
+            passive: {type: boolean}
+
+  bgp:
+    type: object
+    additionalProperties: false
+    required: [asn, router_id]
+    properties:
+      asn: {type: integer, minimum: 1, maximum: 4294967295}
+      router_id: {$ref: "#/$defs/ipv4"}
+      networks:
+        type: array
+        items: {$ref: "#/$defs/ipv4_prefix"}
+      neighbors:
+        type: object
+        propertyNames: {pattern: "^([0-9]{1,3}\\.){3}[0-9]{1,3}$"}
+        additionalProperties:
+          type: object
+          additionalProperties: false
+          required: [remote_as]
+          properties:
+            remote_as:
+              oneOf:
+                - {type: integer, minimum: 1}
+                - {enum: [internal, external]}
+            description: {type: string}
+            update_source: {type: string}
+            next_hop_self: {type: boolean}

@@ -1,0 +1,19 @@
+# Lab 03 - IS-IS: levels, areas, metrics (all FRR - Cumulus NVUE has no IS-IS support)
+name: lab03-isis
+nodes:
+  r1:      {kind: frr,     mgmt: 192.168.100.31, x: -180, y: -100}
+  r2:      {kind: frr,     mgmt: 192.168.100.32, x: 180,  y: -100}
+  r3:      {kind: frr,     mgmt: 192.168.100.33, x: -180, y: 120}
+  r4:      {kind: frr,     mgmt: 192.168.100.34, x: 180,  y: 120}
+  pc1:     {kind: vpcs, ip: 172.16.1.10/24, gw: 172.16.1.1, x: -380, y: -100}
+  pc3:     {kind: vpcs, ip: 172.16.3.10/24, gw: 172.16.3.1, x: -380, y: 220}
+  pc4:     {kind: vpcs, ip: 172.16.4.10/24, gw: 172.16.4.1, x: 380,  y: 220}
+  netauto: {kind: netauto, mgmt: 192.168.100.10, x: -450, y: -260}
+links:
+  - [r1:swp1, r2:swp1]      # 10.3.12.0/30
+  - [r1:swp2, r3:swp1]      # 10.3.13.0/30
+  - [r2:swp2, r4:swp1]      # 10.3.24.0/30
+  - [r3:swp2, r4:swp2]      # 10.3.34.0/30
+  - [r1:swp3, pc1:e0]       # 172.16.1.0/24
+  - [r3:swp3, pc3:e0]       # 172.16.3.0/24
+  - [r4:swp3, pc4:e0]       # 172.16.4.0/24

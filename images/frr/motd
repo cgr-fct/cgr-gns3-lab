@@ -1,0 +1,6 @@
+
+  CGR lab node (FRRouting + ifupdown2)  -  ports: eth0 = mgmt, swp1..swpN = data
+  - interfaces : nano /etc/network/interfaces   then   ifreload -a
+  - routing    : vtysh   (write memory  saves /etc/frr/frr.conf)
+  - checks     : ip -br addr | bridge vlan | vtysh -c "show ip route"
+

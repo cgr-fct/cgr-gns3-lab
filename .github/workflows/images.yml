@@ -1,0 +1,65 @@
+# Builds the two lab containers for amd64 + arm64 and pushes them to GitHub Container Registry:
+#   ghcr.io/<owner>/cgr-frr:latest     ghcr.io/<owner>/cgr-netauto:latest
+# After the first run, make both packages PUBLIC (GitHub > your profile/org > Packages >
+# package > Package settings > Change visibility), otherwise the GNS3 VM cannot pull them.
+name: build-lab-images
+
+on:
+  push:
+    branches: [main]
+    paths: ["images/**", "automation/**", ".github/workflows/images.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: cgr-frr
+            context: images/frr
+            file: images/frr/Dockerfile
+          - name: cgr-netauto
+            context: .
+            file: images/netauto/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lower-case owner
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/${{ matrix.name }}:latest
+            ghcr.io/${{ env.OWNER }}/${{ matrix.name }}:${{ github.run_number }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  smoke-test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lower-case owner
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - name: FRR image starts and daemons run
+        run: |
+          docker run -d --name r1 --privileged ghcr.io/$OWNER/cgr-frr:latest sleep infinity
+          docker exec r1 bash -c '/usr/lib/frr/frrinit.sh start && sleep 3 && vtysh -c "show version" && ifreload --version'
+      - name: netauto image has the toolkit
+        run: |
+          docker run --rm ghcr.io/$OWNER/cgr-netauto:latest bash -c \
+            'cd /root/cgr && python3 apply_intent.py intent/lab04-bgp-example.yml --cli && ansible --version | head -1'

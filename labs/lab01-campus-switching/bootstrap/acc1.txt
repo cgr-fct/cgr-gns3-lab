@@ -1,0 +1,9 @@
+# Bootstrap for acc1 - paste into the acc1 console after logging in
+# (first login: cumulus / cumulus, then set the new password to CumulusLab1!)
+# `python tools/cgr_lab.py bootstrap lab01-campus-switching` does all of this for you.
+nv set system hostname acc1
+nv unset interface eth0 ip address dhcp
+nv set interface eth0 ip address 192.168.100.22/24
+nv set system api listening-address 192.168.100.22
+nv config apply -y
+nv config save

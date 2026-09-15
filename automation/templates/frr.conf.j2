@@ -1,0 +1,50 @@
+{# FRRouting configuration for CGR FRR lite nodes #}
+frr defaults datacenter
+hostname {{ d.hostname | default(name) }}
+log syslog informational
+service integrated-vtysh-config
+!
+{% if d.ospf is defined %}
+{% for ifname, o in d.ospf.interfaces.items() %}
+interface {{ ifname }}
+ ip ospf area {{ o.area }}
+{% if o.network_type is defined %}
+ ip ospf network {{ o.network_type }}
+{% endif %}
+{% if o.passive | default(false) %}
+ ip ospf passive
+{% endif %}
+exit
+!
+{% endfor %}
+router ospf
+ ospf router-id {{ d.ospf.router_id }}
+exit
+!
+{% endif %}
+{% if d.bgp is defined %}
+router bgp {{ d.bgp.asn }}
+ bgp router-id {{ d.bgp.router_id }}
+ no bgp ebgp-requires-policy
+{% for peer, n in (d.bgp.neighbors | default({})).items() %}
+ neighbor {{ peer }} remote-as {{ n.remote_as }}
+{% if n.description is defined %}
+ neighbor {{ peer }} description {{ n.description }}
+{% endif %}
+{% if n.update_source is defined %}
+ neighbor {{ peer }} update-source {{ n.update_source }}
+{% endif %}
+{% endfor %}
+ !
+ address-family ipv4 unicast
+{% for net in d.bgp.networks | default([]) %}
+  network {{ net }}
+{% endfor %}
+{% for peer, n in (d.bgp.neighbors | default({})).items() if n.next_hop_self | default(false) %}
+  neighbor {{ peer }} next-hop-self
+{% endfor %}
+ exit-address-family
+exit
+!
+{% endif %}
+end

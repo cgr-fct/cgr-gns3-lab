@@ -1,0 +1,17 @@
+# Lab 00 intent: one VLAN stretched across sw1 and sw2
+description: "PC1 and PC2 in VLAN 10, trunk between the switches"
+devices:
+  sw1:
+    hostname: sw1
+    loopback: 10.255.0.1/32
+    vlans: [10]
+    interfaces:
+      swp1: {mode: trunk, vlans: [10], description: "to sw2"}
+      swp2: {mode: access, vlan: 10, description: "pc1"}
+  sw2:
+    hostname: sw2
+    loopback: 10.255.0.2/32
+    vlans: [10]
+    interfaces:
+      swp1: {mode: trunk, vlans: [10], description: "to sw1"}
+      swp2: {mode: access, vlan: 10, description: "pc2"}

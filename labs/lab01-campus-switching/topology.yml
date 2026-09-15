@@ -1,0 +1,20 @@
+# Lab 01 - Campus switching: VLANs, trunks, STP, inter-VLAN routing, LACP bond
+name: lab01-campus-switching
+nodes:
+  dist1:   {kind: cumulus, role: switch, mgmt: 192.168.100.21, x: 0,    y: -120}
+  acc1:    {kind: cumulus, role: switch, mgmt: 192.168.100.22, x: -220, y: 60}
+  acc2:    {kind: cumulus, role: switch, mgmt: 192.168.100.23, x: 220,  y: 60}
+  pc1:     {kind: vpcs, ip: 10.10.10.11/24, gw: 10.10.10.1, x: -320, y: 240}
+  pc2:     {kind: vpcs, ip: 10.10.20.12/24, gw: 10.10.20.1, x: -140, y: 240}
+  pc3:     {kind: vpcs, ip: 10.10.10.13/24, gw: 10.10.10.1, x: 140,  y: 240}
+  pc4:     {kind: vpcs, ip: 10.10.20.14/24, gw: 10.10.20.1, x: 320,  y: 240}
+  netauto: {kind: netauto, mgmt: 192.168.100.10, x: -450, y: -120}
+links:
+  - [acc1:swp1, dist1:swp1]
+  - [acc2:swp1, dist1:swp2]
+  - [acc1:swp2, acc2:swp2]     # redundant link -> STP
+  - [acc1:swp5, dist1:swp3]    # second uplink for the LACP bond (Part D)
+  - [acc1:swp3, pc1:e0]
+  - [acc1:swp4, pc2:e0]
+  - [acc2:swp3, pc3:e0]
+  - [acc2:swp4, pc4:e0]
