@@ -1,51 +1,108 @@
-{# FRRouting configuration (/etc/frr/frr.conf) rendered from the intent #}
+{# /etc/frr/frr.conf rendered from cgr-device:device #}
+{% set bgp = d.bgp | default(none) %}
 frr defaults datacenter
-hostname {{ d.hostname | default(name) }}
+{% if d.hostname is defined %}
+hostname {{ d.hostname }}
+{% endif %}
 log syslog informational
 service integrated-vtysh-config
 !
-{% if d.ospf is defined %}
-{% for ifname, o in d.ospf.interfaces.items() %}
-interface {{ ifname }}
- ip ospf area {{ o.area }}
-{% if o.network_type is defined %}
- ip ospf network {{ o.network_type }}
-{% endif %}
-{% if o.passive | default(false) %}
- ip ospf passive
-{% endif %}
+{% for name, lines in d.frr_interfaces.items() %}
+interface {{ name }}
+{% for l in lines %}
+ {{ l }}
+{% endfor %}
 exit
 !
 {% endfor %}
+{% if bgp %}
+router bgp {{ bgp.asn }}
+{% if bgp['router-id'] is defined %}
+ bgp router-id {{ bgp['router-id'] }}
 {% endif %}
-{% if d.bgp is defined %}
-router bgp {{ d.bgp.asn }}
- bgp router-id {{ d.bgp.router_id }}
-{% for peer, n in (d.bgp.neighbors | default({})) | dictsort %}
- neighbor {{ peer }} remote-as {{ n.remote_as }}
+{% for n in bgp.neighbor | default([]) %}
+ neighbor {{ n.address }} remote-as {{ n['remote-as'] }}
 {% if n.description is defined %}
- neighbor {{ peer }} description {{ n.description }}
+ neighbor {{ n.address }} description {{ n.description }}
 {% endif %}
-{% if n.update_source is defined %}
- neighbor {{ peer }} update-source {{ n.update_source }}
+{% if n['update-source'] is defined %}
+ neighbor {{ n.address }} update-source {{ n['update-source'] }}
 {% endif %}
 {% endfor %}
+{% set af = bgp.network is defined or bgp.aggregate is defined
+      or (bgp.neighbor | default([]) | selectattr('next-hop-self', 'defined') | selectattr('next-hop-self') | list)
+      or (bgp.neighbor | default([]) | selectattr('local-preference-in', 'defined') | list)
+      or (bgp.neighbor | default([]) | selectattr('as-path-prepend-out', 'defined') | list) %}
+{% if af %}
  !
  address-family ipv4 unicast
-{% for net in d.bgp.networks | default([]) %}
-  network {{ net }}
+{% for p in bgp.network | default([]) %}
+  network {{ p }}
 {% endfor %}
-{% for peer, n in (d.bgp.neighbors | default({})) | dictsort if n.next_hop_self | default(false) %}
-  neighbor {{ peer }} next-hop-self
+{% for a in bgp.aggregate | default([]) %}
+  aggregate-address {{ a.prefix }}{{ ' summary-only' if a['summary-only'] | default(true) else '' }}
+{% endfor %}
+{% for n in bgp.neighbor | default([]) %}
+{% if n['next-hop-self'] | default(false) %}
+  neighbor {{ n.address }} next-hop-self
+{% endif %}
+{% if n['local-preference-in'] is defined %}
+  neighbor {{ n.address }} route-map CGR-IN-{{ n.address }} in
+{% endif %}
+{% if n['as-path-prepend-out'] is defined %}
+  neighbor {{ n.address }} route-map CGR-OUT-{{ n.address }} out
+{% endif %}
 {% endfor %}
  exit-address-family
+{% endif %}
 exit
 !
 {% endif %}
 {% if d.ospf is defined %}
 router ospf
- ospf router-id {{ d.ospf.router_id }}
+ ospf router-id {{ d.ospf['router-id'] }}
+{% for a in d.ospf.area | default([]) %}
+{% for r in a.range | default([]) %}
+ area {{ a.id }} range {{ r }}
+{% endfor %}
+{% if a.type | default('normal') == 'stub' %}
+ area {{ a.id }} stub
+{% elif a.type | default('normal') == 'totally-stub' %}
+ area {{ a.id }} stub no-summary
+{% endif %}
+{% for v in a['virtual-link'] | default([]) %}
+ area {{ a.id }} virtual-link {{ v }}
+{% endfor %}
+{% endfor %}
+{% if d.ospf['default-originate'] | default('no') == 'yes' %}
+ default-information originate
+{% elif d.ospf['default-originate'] | default('no') == 'always' %}
+ default-information originate always
+{% endif %}
 exit
 !
+{% endif %}
+{% if d.isis is defined %}
+router isis CGR
+ is-type {{ d.isis['is-type'] | default('level-1-2') }}
+ net {{ d.isis.net }}
+exit
+!
+{% endif %}
+{% if bgp %}
+{% for n in bgp.neighbor | default([]) %}
+{% if n['local-preference-in'] is defined %}
+route-map CGR-IN-{{ n.address }} permit 10
+ set local-preference {{ n['local-preference-in'] }}
+exit
+!
+{% endif %}
+{% if n['as-path-prepend-out'] is defined %}
+route-map CGR-OUT-{{ n.address }} permit 10
+ set as-path prepend {{ ([bgp.asn | string] * n['as-path-prepend-out']) | join(' ') }}
+exit
+!
+{% endif %}
+{% endfor %}
 {% endif %}
 end

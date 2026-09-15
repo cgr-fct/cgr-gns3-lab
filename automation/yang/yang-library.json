@@ -1,0 +1,13 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "cgr-2026-09-15",
+    "module": [
+      {
+        "name": "cgr-device",
+        "revision": "2026-09-15",
+        "namespace": "urn:pt:unl:fct:cgr:device",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}

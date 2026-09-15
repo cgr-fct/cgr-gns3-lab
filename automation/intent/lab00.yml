@@ -1,17 +1,32 @@
-# Lab 00 intent: one VLAN stretched across sw1 and sw2
-description: "PC1 and PC2 in VLAN 10, trunk between the switches"
+# Lab 00 intent: VLAN 10 stretched across sw1 and sw2.
+# Each device entry is the content of the YANG container cgr-device:device
+# (see yang/cgr-device@2026-09-15.yang or: pyang -f tree yang/cgr-device@2026-09-15.yang)
 devices:
   sw1:
     hostname: sw1
-    loopback: 10.255.0.1/32
-    vlans: [10]
-    interfaces:
-      swp1: {mode: trunk, vlans: [10], description: "to sw2"}
-      swp2: {mode: access, vlan: 10, description: "pc1"}
+    loopback: [10.255.0.1/32]
+    bridge:
+      vlans: [10]
+    interface:
+      - name: swp1
+        description: to sw2
+        mode: trunk
+        trunk-vlans: [10]
+      - name: swp2
+        description: pc1
+        mode: access
+        access-vlan: 10
   sw2:
     hostname: sw2
-    loopback: 10.255.0.2/32
-    vlans: [10]
-    interfaces:
-      swp1: {mode: trunk, vlans: [10], description: "to sw1"}
-      swp2: {mode: access, vlan: 10, description: "pc2"}
+    loopback: [10.255.0.2/32]
+    bridge:
+      vlans: [10]
+    interface:
+      - name: swp1
+        description: to sw1
+        mode: trunk
+        trunk-vlans: [10]
+      - name: swp2
+        description: pc2
+        mode: access
+        access-vlan: 10

@@ -4,88 +4,107 @@
 
 1. Push this repository to GitHub (organisation or personal account).
 2. **Actions → build-lab-images → Run workflow.** It builds `cgr-frr` and `cgr-netauto` for
-   amd64 + arm64 and pushes them to `ghcr.io/<owner>/…` (≈10 min the first time, mostly the arm64
-   emulation).
+   amd64 + arm64 and pushes them to `ghcr.io/<owner>/…` (≈15 min the first time, mostly the
+   arm64 emulation). Both images are built from the repository root, because they embed
+   `automation/` (YANG model, templates, RESTCONF server and client).
 3. Make both packages **public** (*Packages → package → Package settings → Change visibility*).
 4. In `tools/lab_settings.yml` replace `CHANGE-ME` with the lower-case owner name. Replace
    `<REPO-URL>` in `docs/` and `README.md`. Commit.
-5. Rebuilds run automatically whenever `images/` or `automation/` change (the netauto image
-   embeds `automation/`).
+5. Rebuilds run automatically whenever `images/` or `automation/` change.
 
 Local build alternative (no GitHub):
 ```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/cgr-frr:latest --push images/frr
-docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/cgr-netauto:latest \
-  -f images/netauto/Dockerfile --push .
+docker buildx build --platform linux/amd64,linux/arm64 -f images/frr/Dockerfile \
+  -t <registry>/cgr-frr:latest --push .
+docker buildx build --platform linux/amd64,linux/arm64 -f images/netauto/Dockerfile \
+  -t <registry>/cgr-netauto:latest --push .
 ```
 
 ## Design
 
 * **One kit for everyone.** Every router/switch is the `cgr-frr` container (Debian + FRRouting +
-  ifupdown2 + Linux bridge/bonding, ports renamed `swpN`). Hosts and the automation station
-  are the `cgr-netauto` container. Both images are multi-arch, so Windows, Intel and Apple
-  Silicon Macs and Linux run identical software. No nested virtualisation, no licences, no
-  vendor image downloads.
-* **Syntax taught:** `/etc/network/interfaces` (ifupdown2, Cumulus' own "classic" format) for
-  L2/L3 interfaces and `vtysh` (FRR) for routing. `labs/CHEATSHEET.md` has an NVUE → FRR/ifupdown2
-  mapping table that helps converting last year's slides.
+  ifupdown2 + Linux bridge/bonding + ISC DHCP server/relay + RESTCONF server, ports renamed
+  `swpN`). Hosts and the automation station are the `cgr-netauto` container. Both images are
+  multi-arch: Windows, Intel/Apple Silicon Macs and Linux run identical software, with no
+  nested virtualisation and no vendor images.
+* **CLI syntax taught:** `/etc/network/interfaces` (ifupdown2, Cumulus' classic format) for
+  L2/L3 interfaces, `vtysh` (FRR) for routing, ISC files for DHCP. `labs/CHEATSHEET.md` has an
+  NVUE → FRR/ifupdown2 mapping to help converting last year's slides.
+* **Model-driven layer:** a YANG 1.1 module, `cgr-device`
+  (`automation/yang/cgr-device@2026-09-15.yang`, passes `pyang --strict`), covers VLANs,
+  trunks, bonds, STP priority, SVIs, VRRP, DHCP server/relay, OSPF (areas, stub, ranges,
+  virtual links, default origination, costs, priorities), IS-IS, BGP (networks, aggregates,
+  iBGP/eBGP, next-hop-self, local-preference in, AS-path prepend out) and a `config false`
+  state subtree (interfaces, routes, OSPF and BGP neighbours).
+  * **RESTCONF server** on every router/switch (`automation/restconf_server.py`, HTTPS :443,
+    Basic auth `cgr`/`cgrlab`): RFC 8040 subset with JSON encoding — API root, host-meta,
+    yang-library (modules-state), GET with `content=`, PUT/PATCH (merge)/POST/DELETE on any node,
+    list keys in the URI, `ietf-restconf:errors` reports, `Location` on create. Every write is
+    validated with **yangson** against the module (types, patterns, `mandatory`, `when`),
+    rendered with Jinja2, applied (ifreload, frr-reload, dhcpd/dhcrelay) and rolled back on
+    failure. Not implemented: XML encoding, `depth`/`fields`/`with-defaults`, YANG-PATCH, ETags,
+    RPCs/actions, notifications (NETCONF is not provided).
+  * **YAML intent** (`apply_intent.py`) uses exactly the same data, pushed over SSH or RESTCONF,
+    with `--check`, `--dry-run`, `--diff`, `--render`. SSH pushes also update the device's
+    RESTCONF datastore (`/etc/cgr/running.json`), so both paths stay consistent.
+  * The datastore only reflects what was configured through the model; manual CLI changes are
+    visible in `state` and in `apply_intent.py --diff` (drift), not in the RESTCONF config.
+* **FRR profile** `datacenter` (as on Cumulus): eBGP needs no explicit policy; faster timers.
+* **Kernel STP** (802.1D) — mstpd (RSTP) cannot run inside containers; no admin-edge setting.
 * **GNS3 2.2.54** for everyone — last 2.2 release with an ARM64 GNS3 VM; `cgr_lab.py` uses the
-  2.2 REST API (`/v2`). GNS3 3.x changed the API (`/v3`, JWT auth) — porting means changing the
-  `GNS3` class only.
-* **Management network** 192.168.100.0/24 in labs 00–04; the `proj1-*` labs keep Air's
-  192.168.200.0/24. `cgr_lab.py build` writes `/root/lab/inventory.yml` (Ansible YAML format) on
-  the netauto node, so scripts and Ansible always target the lab that was built.
-* **Automation** is SSH-based: Python (`cgrlib`, `collect.py`), YAML intent validated by JSON
-  Schema, Jinja2 templates, idempotent push with `--diff` (`ifreload` + `frr-reload.py`), and the
-  same workflow as Ansible playbooks.
-* **Solutions** live in the separate instructor package, not in this repository.
+  2.2 REST API (`/v2`).
+* **Password `cgrlab`** (not `cgr`): Ansible masks the password in all module output, so a
+  password equal to `cgr` would corrupt the `cgr-device:…` keys of RESTCONF replies.
 
-## Project 1 (2025/2026)
+## The five labs
 
-`labs/proj1-*` are the 2025/2026 Air topologies (converted with `tools/air2gns3.py`, same names
-and ports; the OSPF one redrawn from the statement figure). The statement PDFs need two edits:
-the title ("… in Cumulus using NVUE" → FRR/ifupdown2) and the *Work Setup* section (→ point to
-`labs/proj1-campus/README.md`). The BGP statement still has to be added to
-`labs/proj1-bgp/README.md`.
+| Lab | Source | Notes |
+|---|---|---|
+| 00 first contact | new | bridge/VLAN by hand, YAML intent, first RESTCONF requests |
+| 01 campus | 2025/2026 project 1, part 1 (Air *ProjectCampusNetwork* topology) | + DHCP server/relay (user hosts are DHCP clients), OSPF **or** IS-IS, automation part |
+| 02 OSPF | 2025/2026 project 1, part 2 (figure redrawn; port mapping in the README) | the "hidden issue" is area 43 not touching area 0 → virtual link R1–R5 through area 32 |
+| 03 IS-IS | new | 4 routers |
+| 04 BGP | 2025/2026 lab 2, part 1 (Air *BGP* topology) | the statement's 10.1.405/406/506.0/29 are invalid → 10.1.45/46/56.0/29; R4 loopback 10.4.4.4/24 added; the Air file lacked the R1–R3 link (added) |
 
-Differences from Cumulus to keep in mind when grading:
-* STP is the kernel's 802.1D (no RSTP/MSTP), so convergence is slower.
-* OSPF advertises addresses on `lo` as /32 host routes (use dummy interfaces for /27s).
-* "Summarise at the distribution switches" in a single-area design requires them to be ABRs
-  (`area X range`) or ASBRs (`summary-address`), exactly as on Cumulus.
+Solutions (separate instructor package, not in this repository): `lab02-ospf/` (FRR files) and
+`lab04-bgp/intent.yml` (cgr-device intent, deployable with `apply_intent.py` or RESTCONF).
 
-## What was verified (GNS3 server 2.2.61 on Linux, Docker, local image builds)
+Things to keep in mind when grading: OSPF advertises addresses on `lo` as /32 host routes; a
+single-area design can only summarise with `area … range` on an ABR (or `summary-address` for
+redistributed routes).
 
-* All 8 labs build; the three `proj1-*` labs run simultaneously in ~2.3 GB.
-* `cgr-frr`: swpN renaming, ifupdown2, FRR daemons (OSPF, IS-IS, BGP), config persistence, SSH, sudo.
-* Lab 04 end to end: pre-configured ISPs (filters, default route), eBGP/iBGP, reachability.
-* Complete `proj1-ospf` solution: virtual link through area 32 (the hidden issue),
-  `area 20 range 172.16.9.0/25`, DR election on the R1–R4–R5 segment,
-  `default-information originate always`, full reachability.
-* Automation: generated inventory, `collect.py` (text, JSON, backups), `apply_intent.py`
-  (`--dry-run`, `--diff`, push, idempotent second run), schema validation, Ansible ad-hoc
-  commands and both playbooks (idempotent), Linux host nodes.
+## What was verified (GNS3 server 2.2.61 on Linux, Docker, locally built images)
+
+* All five labs build.
+* **Lab 04 complete solution**: all BGP sessions established, both aggregates
+  (10.20.0.0/22, 172.16.0.0/20) with components suppressed, R4 prefers R3, the Bank prefers
+  R1–R4, R2 ↔ R5 reachability; deployed with SSH (Bank) and with Ansible → RESTCONF (Provider);
+  second runs change nothing; `--diff` is clean on all six routers.
+* **Lab 02 complete solution** (earlier kit version, same router image): virtual link,
+  `area 20 range`, DR election, `default-information originate always`, full reachability.
+* **DHCP**: server and relay deployed by SSH and by RESTCONF; Linux hosts lease addresses at boot
+  (direct and relayed); configuration and daemons survive a stop/start of the nodes.
+* **RESTCONF**: all methods, list keys, leaf targets, content filtering, operational state
+  (interfaces, routes, OSPF/BGP neighbours), 400/401/404/405/409/415 error reports, YANG
+  validation errors, hostname changes, datastore shared with SSH pushes, Ansible `uri` playbooks.
 
 **Not verified — please check once on real hardware:**
 
-- [ ] macOS Apple Silicon: GNS3 2.2.54 + ARM64 GNS3 VM on VMware Fusion; Lab 00 end to end
-      (VPCS and the built-in Ethernet switch on the ARM VM).
-- [ ] VLAN-aware bridges, VLAN SVIs and LACP bonds inside the containers (the build
-      environment's kernel lacked these modules; the GNS3 VM's Ubuntu kernel has them — if
-      needed, `sudo modprobe -a bonding 8021q dummy` in the GNS3 VM shell): Lab 00 ping,
-      Lab 01 Part D.
-- [ ] The Debian `ifupdown2` package and the FRR apt repository used by
-      `images/frr/Dockerfile` (the local test used ifupdown2 from source and Ubuntu's FRR 8.4).
-- [ ] GHCR publishing and the first pull from the GNS3 VM.
-
-## RESTCONF / YANG
-
-Without Cumulus VX the labs have no vendor REST API: the automation part is
-SSH + YAML + Jinja2 + JSON Schema + Ansible. For an RFC 8040 exercise, options are:
-* a small RESTCONF agent inside `cgr-frr`, backed by FRR's own YANG models, or
-* a vendor sandbox with RESTCONF enabled (e.g. Cisco DevNet's always-on IOS XE sandbox —
-  free account, availability varies).
+- [ ] macOS Apple Silicon: GNS3 2.2.54 + ARM64 GNS3 VM on VMware Fusion; Lab 00 end to end.
+- [ ] **VLAN-aware bridges, VLAN SVIs, LACP bonds and VRRP (macvlan)** inside the containers —
+      the build environment's kernel lacked these features, so the Lab 00 VLAN, the campus
+      bonds/SVIs and VRRP were only checked as generated configuration. The GNS3 VM's Ubuntu
+      kernel has them; if needed, `sudo modprobe -a bonding 8021q dummy macvlan` in the GNS3 VM shell.
+- [ ] DHCP relay on an **SVI** (tested on a routed port).
+- [ ] The Debian packages used by `images/frr/Dockerfile` (the local test used Ubuntu's FRR 8.4,
+      ifupdown2 from source and ISC DHCP 4.4.3) — in particular FRR 10's `frr-reload.py` and
+      JSON outputs used for the RESTCONF state (`show ip ospf neighbor json` changed format
+      between FRR versions; the server accepts both known formats).
+- [ ] GHCR publishing and the first image pull from the GNS3 VM.
+- [ ] GNS3 "Reload" of a node left it waiting for its interfaces in the test environment;
+      stop/start works (documented in troubleshooting).
 
 ## Ideas for more labs
-VRRP (`vrrpd` is enabled), BFD, route reflectors (cheap to scale to 10+ routers), EVPN-VXLAN
-with FRR, IPv6 (OSPFv3 is enabled), monitoring with `show … json` → Python → CSV.
+BFD, route reflectors (cheap to scale), EVPN-VXLAN with FRR, IPv6 (OSPFv3 is enabled),
+extending the YANG model (static routes, ACLs) as an exercise, monitoring with RESTCONF
+`state` → Python → CSV.

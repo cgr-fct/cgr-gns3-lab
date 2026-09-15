@@ -1,0 +1,486 @@
+module cgr-device {
+  yang-version 1.1;
+  namespace "urn:pt:unl:fct:cgr:device";
+  prefix cgr;
+
+  organization "NOVA SST - Configuração e Gestão de Redes (CGR)";
+  contact "Pedro Amaral <pfa@fct.unl.pt>";
+  description
+    "Configuration and state of a CGR lab router/switch (FRRouting + ifupdown2).
+
+     The same data tree is used
+       * in YAML intent files pushed over SSH by apply_intent.py, and
+       * as the RESTCONF resource /restconf/data/cgr-device:device.
+
+     It is deliberately small: it covers what the CGR labs need (VLANs, trunks,
+     bonds, STP, SVIs, DHCP, OSPF, IS-IS, BGP) and nothing else.";
+
+  revision 2026-09-15 {
+    description "Initial revision for the 2026/2027 labs.";
+  }
+
+  /* ------------------------------------------------------------ types */
+
+  typedef ipv4-address {
+    type string {
+      pattern
+        '(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}'
+      + '([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])';
+    }
+    description "Dotted-quad IPv4 address, e.g. 10.0.0.1.";
+  }
+
+  typedef ipv4-prefix {
+    type string {
+      pattern
+        '(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}'
+      + '([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
+      + '/(([0-9])|([1-2][0-9])|(3[0-2]))';
+    }
+    description "IPv4 address or network with prefix length, e.g. 10.0.0.1/24.";
+  }
+
+  typedef vlan-id {
+    type uint16 {
+      range "1..4094";
+    }
+  }
+
+  typedef port-name {
+    type string {
+      pattern 'swp[0-9]+|bond[0-9]+';
+    }
+    description "A switch port (swpN) or a bond (bondN).";
+  }
+
+  typedef routing-interface {
+    type string {
+      pattern 'lo|swp[0-9]+|bond[0-9]+|vlan[0-9]+';
+    }
+    description "Any interface that can take part in routing.";
+  }
+
+  typedef ospf-area-id {
+    type union {
+      type uint32;
+      type ipv4-address;
+    }
+  }
+
+  /* ------------------------------------------------------------ groupings */
+
+  grouping interface-config {
+    leaf description {
+      type string;
+    }
+    leaf enabled {
+      type boolean;
+      default "true";
+      description "Administrative state.";
+    }
+    leaf mode {
+      type enumeration {
+        enum access {
+          description "Untagged member of one VLAN of the bridge.";
+        }
+        enum trunk {
+          description "802.1Q tagged member of the bridge.";
+        }
+        enum routed {
+          description "Layer-3 port, not in the bridge.";
+        }
+      }
+      description "What the port does. Without a mode the port is only brought up.";
+    }
+    leaf access-vlan {
+      when "../mode = 'access'";
+      type vlan-id;
+      mandatory true;
+    }
+    leaf-list trunk-vlans {
+      when "../mode = 'trunk'";
+      type vlan-id;
+      min-elements 1;
+    }
+    leaf native-vlan {
+      when "../mode = 'trunk'";
+      type vlan-id;
+      description "Untagged VLAN on the trunk (default: the bridge PVID, 1).";
+    }
+    leaf-list address {
+      when "../mode = 'routed'";
+      type ipv4-prefix;
+    }
+  }
+
+  /* ------------------------------------------------------------ data */
+
+  container device {
+    description "One lab router or switch.";
+
+    leaf hostname {
+      type string {
+        pattern '[A-Za-z][A-Za-z0-9-]{0,62}';
+      }
+    }
+
+    leaf-list loopback {
+      type ipv4-prefix;
+      ordered-by user;
+      description "Addresses configured on the loopback interface lo.";
+    }
+
+    container bridge {
+      description "The VLAN-aware bridge 'bridge' (created when a port is access or trunk).";
+      leaf-list vlans {
+        type vlan-id;
+        description "VLANs that exist on the switch.";
+      }
+      leaf stp {
+        type boolean;
+        default "true";
+      }
+      leaf stp-priority {
+        type uint16 {
+          range "0..61440";
+        }
+        description "Bridge priority (multiples of 4096 are customary).";
+      }
+    }
+
+    list interface {
+      key "name";
+      description "Switch ports and bonds.";
+      leaf name {
+        type port-name;
+      }
+      leaf-list bond-member {
+        type string {
+          pattern 'swp[0-9]+';
+        }
+        description "Members of this bond (only for bondN). LACP (802.3ad) is used.";
+      }
+      uses interface-config;
+    }
+
+    list svi {
+      key "vlan";
+      description "Routed VLAN interfaces (vlanN on top of the bridge).";
+      leaf vlan {
+        type vlan-id;
+      }
+      leaf-list address {
+        type ipv4-prefix;
+        min-elements 1;
+      }
+      container vrrp {
+        presence "Enable VRRP (first-hop redundancy) on this SVI.";
+        leaf vrid {
+          type uint8 {
+            range "1..255";
+          }
+          mandatory true;
+        }
+        leaf virtual-address {
+          type ipv4-address;
+          mandatory true;
+        }
+        leaf priority {
+          type uint8 {
+            range "1..254";
+          }
+          default "100";
+        }
+      }
+    }
+
+    container dhcp {
+      container server {
+        presence "Run a DHCP server (isc-dhcpd).";
+        leaf-list interface {
+          type routing-interface;
+          min-elements 1;
+          description "Interfaces where dhcpd listens (for relayed requests, the upstream interface).";
+        }
+        list pool {
+          key "subnet";
+          leaf subnet {
+            type ipv4-prefix;
+          }
+          leaf range-start {
+            type ipv4-address;
+            mandatory true;
+          }
+          leaf range-end {
+            type ipv4-address;
+            mandatory true;
+          }
+          leaf gateway {
+            type ipv4-address;
+          }
+          leaf-list dns-server {
+            type ipv4-address;
+          }
+          leaf lease-time {
+            type uint32;
+            units "seconds";
+            default "3600";
+          }
+        }
+      }
+      container relay {
+        presence "Relay DHCP requests to a server (isc-dhcrelay).";
+        leaf-list server {
+          type ipv4-address;
+          min-elements 1;
+        }
+        leaf-list client-interface {
+          type routing-interface;
+          min-elements 1;
+          description "Interfaces facing the clients (usually SVIs).";
+        }
+        leaf-list upstream-interface {
+          type routing-interface;
+          min-elements 1;
+          description "Interfaces through which the server is reached.";
+        }
+      }
+    }
+
+    container ospf {
+      presence "Enable OSPFv2.";
+      leaf router-id {
+        type ipv4-address;
+        mandatory true;
+      }
+      leaf default-originate {
+        type enumeration {
+          enum "no";
+          enum "yes" {
+            description "Originate a default route if the router has one.";
+          }
+          enum "always";
+        }
+        default "no";
+      }
+      list area {
+        key "id";
+        leaf id {
+          type ospf-area-id;
+        }
+        leaf type {
+          type enumeration {
+            enum normal;
+            enum stub;
+            enum totally-stub;
+          }
+          default "normal";
+        }
+        leaf-list range {
+          type ipv4-prefix;
+          description "Summarise the area's routes (on an ABR).";
+        }
+        leaf-list virtual-link {
+          type ipv4-address;
+          description "Router IDs of the other ends of virtual links through this area.";
+        }
+      }
+      list interface {
+        key "name";
+        leaf name {
+          type routing-interface;
+        }
+        leaf area {
+          type ospf-area-id;
+          mandatory true;
+        }
+        leaf network-type {
+          type enumeration {
+            enum broadcast;
+            enum point-to-point;
+          }
+        }
+        leaf passive {
+          type boolean;
+          default "false";
+        }
+        leaf cost {
+          type uint16 {
+            range "1..65535";
+          }
+        }
+        leaf priority {
+          type uint8;
+        }
+      }
+    }
+
+    container isis {
+      presence "Enable IS-IS.";
+      leaf net {
+        type string {
+          pattern '[0-9]{2}(\.[0-9A-Fa-f]{4}){1,6}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.00';
+        }
+        mandatory true;
+        description "Network entity title, e.g. 49.0001.0102.5500.3001.00.";
+      }
+      leaf is-type {
+        type enumeration {
+          enum level-1;
+          enum level-1-2;
+          enum level-2-only;
+        }
+        default "level-1-2";
+      }
+      list interface {
+        key "name";
+        leaf name {
+          type routing-interface;
+        }
+        leaf passive {
+          type boolean;
+          default "false";
+        }
+        leaf network-type {
+          type enumeration {
+            enum broadcast;
+            enum point-to-point;
+          }
+        }
+        leaf metric {
+          type uint32 {
+            range "1..16777215";
+          }
+        }
+      }
+    }
+
+    container bgp {
+      presence "Enable BGP.";
+      leaf asn {
+        type uint32 {
+          range "1..4294967295";
+        }
+        mandatory true;
+      }
+      leaf router-id {
+        type ipv4-address;
+      }
+      leaf-list network {
+        type ipv4-prefix;
+        description "Prefixes to originate (they must be in the routing table).";
+      }
+      list aggregate {
+        key "prefix";
+        leaf prefix {
+          type ipv4-prefix;
+        }
+        leaf summary-only {
+          type boolean;
+          default "true";
+        }
+      }
+      list neighbor {
+        key "address";
+        leaf address {
+          type ipv4-address;
+        }
+        leaf remote-as {
+          type union {
+            type uint32;
+            type enumeration {
+              enum internal;
+              enum external;
+            }
+          }
+          mandatory true;
+        }
+        leaf description {
+          type string;
+        }
+        leaf update-source {
+          type routing-interface;
+        }
+        leaf next-hop-self {
+          type boolean;
+          default "false";
+        }
+        leaf local-preference-in {
+          type uint32;
+          description "Set this local preference on routes received from the neighbor.";
+        }
+        leaf as-path-prepend-out {
+          type uint8 {
+            range "1..10";
+          }
+          description "Prepend the own AS this many times on routes sent to the neighbor.";
+        }
+      }
+    }
+
+    container state {
+      config false;
+      description "Operational state, read live from the device.";
+      list interface {
+        key "name";
+        leaf name {
+          type string;
+        }
+        leaf oper-status {
+          type string;
+        }
+        leaf mac-address {
+          type string;
+        }
+        leaf mtu {
+          type uint32;
+        }
+        leaf-list address {
+          type ipv4-prefix;
+        }
+      }
+      list route {
+        key "prefix";
+        leaf prefix {
+          type ipv4-prefix;
+        }
+        leaf protocol {
+          type string;
+        }
+        leaf-list next-hop {
+          type string;
+        }
+      }
+      list ospf-neighbor {
+        key "router-id interface";
+        leaf router-id {
+          type ipv4-address;
+        }
+        leaf interface {
+          type string;
+        }
+        leaf state {
+          type string;
+        }
+        leaf address {
+          type ipv4-address;
+        }
+      }
+      list bgp-neighbor {
+        key "address";
+        leaf address {
+          type string;
+        }
+        leaf remote-as {
+          type uint32;
+        }
+        leaf state {
+          type string;
+        }
+        leaf prefixes-received {
+          type uint32;
+        }
+      }
+    }
+  }
+}

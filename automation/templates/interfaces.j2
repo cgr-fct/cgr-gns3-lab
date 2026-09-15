@@ -1,0 +1,69 @@
+{# Data-plane part of /etc/network/interfaces (ifupdown2), rendered from cgr-device:device #}
+{% if d.loopback is defined %}
+auto lo
+iface lo inet loopback
+{% for a in d.loopback %}
+    address {{ a }}
+{% endfor %}
+
+{% endif %}
+{% for m in d.bond_members %}
+auto {{ m }}
+iface {{ m }}
+
+{% endfor %}
+{% for i in d.interface | default([]) %}
+auto {{ i.name }}
+iface {{ i.name }}
+{% if i.description is defined %}
+    alias {{ i.description }}
+{% endif %}
+{% if i['bond-member'] is defined %}
+    bond-slaves {{ i['bond-member'] | join(' ') }}
+    bond-mode 802.3ad
+    bond-lacp-rate fast
+    bond-miimon 100
+{% endif %}
+{% if i.mode | default('') == 'access' %}
+    bridge-access {{ i['access-vlan'] }}
+{% elif i.mode | default('') == 'trunk' %}
+    bridge-vids {{ i['trunk-vlans'] | join(' ') }}
+{% if i['native-vlan'] is defined %}
+    bridge-pvid {{ i['native-vlan'] }}
+{% endif %}
+{% elif i.mode | default('') == 'routed' %}
+{% for a in i.address | default([]) %}
+    address {{ a }}
+{% endfor %}
+{% endif %}
+{% if not i.enabled | default(true) %}
+    link-down yes
+{% endif %}
+
+{% endfor %}
+{% if d.l2_ports %}
+auto bridge
+iface bridge
+    bridge-vlan-aware yes
+    bridge-ports {{ d.l2_ports | join(' ') }}
+    bridge-vids {{ (d.bridge | default({})).vlans | default([1]) | join(' ') }}
+    bridge-pvid 1
+    bridge-stp {{ 'on' if (d.bridge | default({})).stp | default(true) else 'off' }}
+{% if (d.bridge | default({}))['stp-priority'] is defined %}
+    bridge-bridgeprio {{ d.bridge['stp-priority'] }}
+{% endif %}
+
+{% endif %}
+{% for s in d.svi | default([]) %}
+auto vlan{{ s.vlan }}
+iface vlan{{ s.vlan }}
+{% for a in s.address %}
+    address {{ a }}
+{% endfor %}
+    vlan-id {{ s.vlan }}
+    vlan-raw-device bridge
+{% if s.vrrp is defined %}
+    vrrp {{ s.vrrp.vrid }} {{ s.vrrp['virtual-address'] }}/{{ s.address[0].split('/')[1] }}
+{% endif %}
+
+{% endfor %}

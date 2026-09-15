@@ -9,4 +9,4 @@ mgmt_subnet: 192.168.100.0/24
 
 # Login of the router/switch nodes (set in images/frr/Dockerfile)
 user: cgr
-password: cgr
+password: cgrlab

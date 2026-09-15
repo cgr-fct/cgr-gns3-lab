@@ -1,81 +1,101 @@
-# Lab 04 — BGP: a dual-homed enterprise
+# Lab 04 — BGP: a bank and its provider
 
-**Topics:** eBGP and iBGP sessions, next-hop-self, IGP underlay for iBGP, prefix
-advertisement, local preference, AS-path prepending, communities, provider filtering.
+**Topics:** OSPF inside each AS, iBGP full mesh, eBGP between ASes, next-hop reachability,
+route aggregation, local preference for inbound and outbound traffic selection.
 
-**Nodes:** e1, e2 = your enterprise edge routers (AS 65000). isp1 (AS 65101) and isp2
-(AS 65102) are **already configured** by the instructor — you may use `show` commands on them,
-but do not change them. Syntax: [cheat sheet](../CHEATSHEET.md).
-
-```mermaid
-graph TB
-  srv["srv 203.0.113.10<br/>(the Internet)"] --- |swp3| isp2
-  isp1["isp1 · AS 65101<br/>announces 198.18.1.0/24"] --- |"swp2 198.51.100.8/30 swp2"| isp2["isp2 · AS 65102<br/>announces 203.0.113.0/24"]
-  isp1 --- |"swp1 198.51.100.0/30 swp2"| e1
-  isp2 --- |"swp1 198.51.100.4/30 swp2"| e2
-  e1["e1 · AS 65000<br/>lo 10.255.4.1"] --- |"swp1 10.4.12.0/30 swp1"| e2["e2 · AS 65000<br/>lo 10.255.4.2"]
-  e1 --- |swp3| pc1["pc1 192.0.2.10/25"]
-  e2 --- |swp3| pc2["pc2 192.0.2.130/25"]
-```
-
-| Link | Subnet | Addresses |
-|---|---|---|
-| e1–e2 | 10.4.12.0/30 | e1 .1, e2 .2 |
-| e1–isp1 | 198.51.100.0/30 | isp1 .1, e1 .2 |
-| e2–isp2 | 198.51.100.4/30 | isp2 .5, e2 .6 |
-| isp1–isp2 | 198.51.100.8/30 | isp1 .9, isp2 .10 |
-| LAN e1 | 192.0.2.0/25 | e1 .1, pc1 .10 |
-| LAN e2 | 192.0.2.128/25 | e2 .129, pc2 .130 |
-| Internet LAN | 203.0.113.0/24 | isp2 .1, srv .10 |
-| Loopbacks | e1 10.255.4.1, e2 10.255.4.2 | |
-
-Your address block is **192.0.2.0/24**. The ISPs accept only 192.0.2.0/24 or more-specifics
-up to /25 from you, send you a **default route**, and honour this community:
-
-| Community | Meaning |
-|---|---|
-| `65101:80` (to isp1) / `65102:80` (to isp2) | "backup link": ISP sets local-preference 80 instead of 200 |
+![statement figure](statement-figure.png)
 
 ```bash
 python tools/cgr_lab.py build labs/lab04-bgp --start
 ```
 
-## Part A — Underlay
-Configure interface addresses on e1/e2 and OSPF area 0 between them (link + loopbacks + LANs as
-passive). Check that e1 can ping e2's loopback.
+## Addressing (use this table — it corrects the figure)
 
-## Part B — eBGP and iBGP
-1. On e1 (vtysh): `router bgp 65000`, `bgp router-id 10.255.4.1`, and an eBGP session to
-   198.51.100.1 (AS 65101): `neighbor 198.51.100.1 remote-as 65101`. e2: the same towards isp2.
-2. iBGP between the loopbacks: `neighbor 10.255.4.2 remote-as internal`,
-   `neighbor 10.255.4.2 update-source lo`.
-3. Advertise your LANs: `address-family ipv4 unicast` → `network 192.0.2.0/25`.
-4. Verify: `show bgp summary`, `show bgp ipv4 unicast`, `show ip route`.
-   `pc1> ping 203.0.113.10` must work.
-5. On e1, look at the route to 203.0.113.0/24 learned from e2 — is its next hop reachable?
-   Fix it with **next-hop-self** (`neighbor 10.255.4.2 next-hop-self` under the address family).
+The figure labels three provider links 10.1.**405**.0/29, 10.1.**406**.0/29 and 10.1.**506**.0/29.
+Those are not valid IPv4 addresses (an octet cannot be larger than 255). In the lab use
+**10.1.45.0/29**, **10.1.46.0/29** and **10.1.56.0/29**, with the same host numbers. The figure
+shows no address for R4's loopback: use **10.4.4.4/24**.
 
-## Part C — Traffic engineering
-Company policy: **isp1 is the primary provider** for both directions.
+| Link | Subnet | Ports | Addresses |
+|---|---|---|---|
+| R1–R4 (eBGP) | 192.168.14.0/30 | R1 swp1 — R4 swp1 | R1 .1, R4 .2 |
+| R3–R4 (eBGP) | 192.168.34.0/30 | R3 swp3 — R4 swp3 | R3 .1, R4 .2 |
+| R1–R2 | 10.1.102.0/29 | R1 swp2 — R2 swp2 | R1 .1, R2 .2 |
+| R1–R3 | 10.1.103.0/29 | R1 swp3 — R3 swp1 | R1 .1, R3 .3 |
+| R2–R3 | 10.1.203.0/29 | R2 swp4 — R3 swp4 | R2 .2, R3 .3 |
+| R4–R5 | **10.1.45.0/29** | R4 swp2 — R5 swp2 | R4 .4, R5 .5 |
+| R4–R6 | **10.1.46.0/29** | R4 swp4 — R6 swp4 | R4 .4, R6 .6 |
+| R5–R6 | **10.1.56.0/29** | R5 swp1 — R6 swp1 | R5 .5, R6 .6 |
 
-1. *Outbound:* set a higher local preference on routes learned from isp1 (an inbound
-   `route-map` with `set local-preference`), so that e2 also exits via e1.
-   Verify with `pc2> trace 203.0.113.10`.
-2. *Inbound:* make isp2 prefer the path through isp1 to reach 192.0.2.0/24. Try two ways and
-   compare on isp2 (`show bgp ipv4 192.0.2.0/24`):
-   a) AS-path prepend towards isp2 (`set as-path prepend …`); b) the `65102:80` community
-   towards isp2 (`set community …` in an outbound route-map; check that it arrives with
-   `show bgp ipv4 unicast 192.0.2.128/25` on isp2).
-   Only one of the two methods works here. Which one, and why? (Hint: read isp2's
-   `CUSTOMER-IN` route-map with `show route-map` and remember the BGP decision process order.)
-3. Advertise the aggregate 192.0.2.0/24 (in addition to or instead of the /25s). What changes?
-4. Fail the e1–isp1 link. How long until pc1 reaches srv again? Restore it.
+| Router | AS | Loopback addresses (all on `lo`) | Management |
+|---|---|---|---|
+| R1 | 65500 (Bank) | 10.1.1.1/24 | 192.168.200.21 |
+| R2 | 65500 | 10.2.2.2/24; 10.20.0.1/24, 10.20.1.1/24, 10.20.2.1/24, 10.20.3.1/24 (Lo200–203) | .22 |
+| R3 | 65500 | 10.3.3.3/24 | .23 |
+| R4 | 64600 (Provider) | **10.4.4.4/24** | .24 |
+| R5 | 64600 | 10.5.5.5/24; 172.16.0.1/22, 172.16.4.1/22, 172.16.8.1/22, 172.16.12.1/22 (Lo0/4/8/12) | .25 |
+| R6 | 64600 | 10.6.6.6/24 | .26 |
 
-## Deliverables
-The configuration of e1/e2 (`./collect.py e1 e2`), `show bgp ipv4 unicast` on isp1 and isp2
-before/after Part C, traceroutes, and a short explanation of each policy.
+netauto: 192.168.200.254.
+
+## Requirements
+
+Implement and verify:
+
+1. Use the addressing scheme above.
+2. Configure OSPF inside the Bank network with a single area (area 0).
+3. Configure OSPF inside the Provider network with a single area (area 0).
+4. The Bank network is BGP **AS 65500** and the Provider network is BGP **AS 64600**.
+5. **Do not include** the 192.168.14.0/30 and 192.168.34.0/30 networks in the OSPF instances
+   of the two ASes.
+6. All routers take part in BGP. Configure a **full mesh of iBGP** peers in each AS.
+7. In the Bank network, the networks of Lo200–Lo203 on R2 are advertised via BGP **as a
+   summary**; these are the only networks the Bank AS advertises via BGP.
+8. R5 sends a **summary route** via BGP to the Bank network representing the Lo0, Lo4, Lo8 and
+   Lo12 loopbacks; these are the only prefixes the Provider AS announces via BGP.
+9. R4 **prefers the path via the R4–R3 link** to reach the Bank network.
+10. Routers in the Bank network **prefer the R1–R4 link** to reach the Provider networks.
+11. Test connectivity between the BGP-announced networks of R5 and R2
+    (`ping -I 10.20.0.1 172.16.4.1` on R2, `traceroute -s …`).
+
+## How to configure
+
+Interfaces and loopbacks in `/etc/network/interfaces` (`ifreload -a`), OSPF and BGP in `vtysh` —
+see the **[cheat sheet](../CHEATSHEET.md)**. A few reminders:
+
+```
+router bgp 65500
+ bgp router-id 10.1.1.1
+ neighbor 10.2.2.2 remote-as internal
+ neighbor 10.2.2.2 update-source lo
+ neighbor 192.168.14.2 remote-as 64600
+ address-family ipv4 unicast
+  network 10.20.0.0/24
+  aggregate-address 10.20.0.0/22 summary-only
+  neighbor 10.2.2.2 next-hop-self
+  neighbor 192.168.14.2 route-map PREFER-R4 in
+!
+route-map PREFER-R4 permit 10
+ set local-preference 200
+```
+
+* `network` only announces a prefix that is **in the routing table** with exactly that mask
+  (the loopback subnets are, as connected routes).
+* The routers use FRR's *datacenter* defaults: eBGP sessions exchange routes without an
+  explicit policy (with *traditional* defaults you would need `no bgp ebgp-requires-policy`).
+* Useful: `show bgp summary`, `show bgp ipv4 unicast`, `show bgp ipv4 unicast 10.20.0.0/22`,
+  `show ip route bgp`, `show ip ospf neighbor`.
+
+## What to deliver
+
+The configuration of the six routers (`./collect.py all` on netauto), the BGP tables of R1, R4
+and R5, the traceroutes of requirement 11, and a short explanation of how you met each
+requirement (in particular 7–10, and why next-hop reachability matters for iBGP).
 
 ## Automation corner
-`automation/intent/lab04-bgp-example.yml` contains e1's intent (underlay + BGP). Complete e2,
-then push both with `./apply_intent.py intent/lab04-bgp-example.yml`. Extend the model with
-`local_pref` / `prepend` for Part C.
+
+BGP is part of the `cgr-device` model (`bgp: {asn, router-id, network, aggregate, neighbor:
+[{address, remote-as, update-source, next-hop-self, local-preference-in, as-path-prepend-out}]}`).
+Configure the Provider AS (R4, R5, R6) **only by automation** — an intent file pushed with
+`./apply_intent.py`, or RESTCONF requests with `./restconf.py` / `curl` — and read the BGP
+sessions back with `./restconf.py R4 get state/bgp-neighbor --content nonconfig`.

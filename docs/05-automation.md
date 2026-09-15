@@ -4,20 +4,20 @@ Every lab contains a **netauto** station on the management network. Open its con
 land in `/root/cgr`, a copy of this repository's [`automation/`](../automation/README.md) folder
 (the reference), and `/root/lab/inventory.yml` lists the devices of the lab you built.
 
+Every router/switch runs a **RESTCONF server** for the YANG module **`cgr-device`**, and the
+same model drives the YAML intent files — so you can configure a device by CLI, by YAML over
+SSH, by RESTCONF (curl, Python, Ansible), and compare the results.
+
 What you practise, in increasing order of abstraction:
 
-1. **Remote execution** — `ssh cgr@<ip>`, then `collect.py` runs one command on every device
-   and returns text or JSON.
-2. **Scripting** — `cgrlib.py`: a ~80-line Python library (inventory + SSH session) you
-   import in your own scripts.
-3. **Data modelling** — `schema/intent.schema.yml`: a JSON Schema that validates the intent
-   before anything touches the network (the job YANG does for NETCONF/RESTCONF).
-4. **Intent + templates** — `apply_intent.py`: YAML intent → Jinja2 → device configuration,
-   with `--dry-run`, `--diff` and `--render`, pushed idempotently over SSH.
-5. **Configuration management** — Ansible is installed:
-   ```bash
-   cd /root/cgr
-   ansible all -i ~/lab/inventory.yml -m ping             # see automation/README.md for the one-time setup
-   ```
+| Step | Tool | Concepts |
+|---|---|---|
+| 1 | `ssh`, `collect.py` | remote execution, structured output (`show … json`) |
+| 2 | `cgrlib.py`, your own Python | scripting against an inventory |
+| 3 | `pyang`, `yang/cgr-device@….yang` | **YANG**: containers, lists and keys, leaf-lists, typedefs, `when`, `mandatory`, `config false` |
+| 4 | `curl`, `restconf.py` | **RESTCONF** (RFC 8040): resources, GET/PUT/PATCH/POST/DELETE, `content=`, error reports, JSON encoding (RFC 7951) |
+| 5 | `apply_intent.py`, `intent/*.yml`, `templates/` | **YAML** intent, validation against the model, **Jinja2** templates, declarative and idempotent push, drift detection (`--diff`) |
+| 6 | `ansible`, `playbooks/` | configuration management; RESTCONF through the `uri` module |
 
-Your own scripts can live in `/root` — GNS3 keeps that folder when the node stops.
+Start with Lab 00, section 5. Your own scripts can live in `/root` — GNS3 keeps that folder
+when the node stops.

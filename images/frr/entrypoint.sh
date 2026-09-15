@@ -47,7 +47,20 @@ chown -R frr:frr /etc/frr
 chmod 640 /etc/frr/frr.conf
 /usr/lib/frr/frrinit.sh start >/tmp/frr-start.log 2>&1 || log "FRR failed to start (see /tmp/frr-start.log)"
 
-# 6. Helpers
+# 6. DHCP server / relay (only when configured)
+. /etc/default/isc-dhcp-server 2>/dev/null
+if [ -n "$INTERFACESv4" ] && [ -s /etc/dhcp/dhcpd.conf ]; then
+  service isc-dhcp-server start >/dev/null 2>&1 || log "dhcpd failed to start (check with: dhcpd -t)"
+fi
+. /etc/default/isc-dhcp-relay 2>/dev/null
+if [ -n "$SERVERS" ]; then
+  service isc-dhcp-relay start >/dev/null 2>&1 || log "dhcrelay failed to start"
+fi
+
+# 7. RESTCONF server (HTTPS :443, user cgr / cgrlab)
+nohup /usr/local/sbin/cgr-restconf >/var/log/cgr-restconf.log 2>&1 &
+
+# 8. Helpers
 service lldpd start >/dev/null 2>&1 || lldpd >/dev/null 2>&1
 /usr/sbin/sshd >/dev/null 2>&1 || true
 

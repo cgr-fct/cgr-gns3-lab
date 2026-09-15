@@ -40,7 +40,7 @@ def load_inventory(path=None):
             "name": name,
             "host": h.get("ansible_host", name),
             "user": h.get("ansible_user", "cgr"),
-            "password": os.environ.get("CGR_PASSWORD", h.get("ansible_password", "cgr")),
+            "password": os.environ.get("CGR_PASSWORD", h.get("ansible_password", "cgrlab")),
             **{k: v for k, v in h.items() if not k.startswith("ansible_")},
         }
     return devices
@@ -57,7 +57,7 @@ class Device:
         self.cli = paramiko.SSHClient()
         self.cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.cli.connect(self.dev["host"], username=self.dev.get("user", "cgr"),
-                         password=self.dev.get("password", "cgr"),
+                         password=self.dev.get("password", "cgrlab"),
                          look_for_keys=False, allow_agent=False, timeout=self.timeout)
         return self
 

@@ -1,27 +1,20 @@
-# Fallback inventory (Ansible YAML format) for labs 00-04, management 192.168.100.0/24.
-# A lab built with tools/cgr_lab.py also gets its own /root/lab/inventory.yml on the netauto
-# node; the scripts and ansible.cfg use that one automatically.
+# Fallback inventory (Ansible YAML format).
+# Every lab built with tools/cgr_lab.py writes its own /root/lab/inventory.yml on the netauto
+# node; the scripts and ansible.cfg use that one automatically. This file is only used when it
+# is missing (or with -i inventory.yml).
 all:
   vars:
     ansible_user: cgr
-    ansible_password: cgr          # or export CGR_PASSWORD=... for the Python scripts
+    ansible_password: cgrlab       # or export CGR_PASSWORD=... for the Python scripts
     ansible_python_interpreter: /usr/bin/python3
   children:
-    lab00: {hosts: {sw1: {ansible_host: 192.168.100.11}, sw2: {ansible_host: 192.168.100.12}}}
-    lab01:
+    lab00:
       hosts:
-        dist1: {ansible_host: 192.168.100.21}
-        acc1:  {ansible_host: 192.168.100.22}
-        acc2:  {ansible_host: 192.168.100.23}
-    lab02_03:
+        sw1: {ansible_host: 192.168.100.11}
+        sw2: {ansible_host: 192.168.100.12}
+    lab03:
       hosts:
         r1: {ansible_host: 192.168.100.31}
         r2: {ansible_host: 192.168.100.32}
         r3: {ansible_host: 192.168.100.33}
         r4: {ansible_host: 192.168.100.34}
-    lab04:
-      hosts:
-        e1:   {ansible_host: 192.168.100.41}
-        e2:   {ansible_host: 192.168.100.42}
-        isp1: {ansible_host: 192.168.100.43}
-        isp2: {ansible_host: 192.168.100.44}

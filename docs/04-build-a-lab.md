@@ -6,16 +6,16 @@ Keep the **GNS3 GUI open** (it runs the controller the tool talks to). On Window
 ## The workflow
 
 ```bash
-python tools/cgr_lab.py build labs/lab01-campus-switching --start
-python tools/cgr_lab.py consoles lab01-campus-switching       # optional: list console ports
+python tools/cgr_lab.py build labs/lab01-campus --start
+python tools/cgr_lab.py consoles lab01-campus       # optional: list console ports
 ```
 
-Then in GNS3: **File → Open project → lab01-campus-switching**. Double-click a node to open its
+Then in GNS3: **File → Open project → lab01-campus**. Double-click a node to open its
 console (a root shell — no login).
 
 * `build` creates the project, every node, every cable, the management switch, the addresses
-  of the PCs and of the management interfaces, the pre-configured devices of the lab (e.g. the
-  ISPs in Lab 04), and the lab inventory on the netauto station.
+  of the PCs and of the management interfaces, any pre-configured device files of the lab, and
+  the lab inventory on the netauto station.
 * The **first** start downloads the two container images (~500 MB) into the GNS3 VM, which takes
   a few minutes and needs Internet access. Later starts take seconds.
 
@@ -48,8 +48,8 @@ they are `swp1`, `swp2`, … (the cable on `eth5` is `swp5`). `eth0` is always m
 
 ## Saving your work
 
-* `/etc/network/interfaces`, `/etc/frr` (after `write memory`) and `/root` are kept by GNS3 when
-  a node is stopped and started.
+* `/etc/network/interfaces`, `/etc/frr` (after `write memory`), `/etc/dhcp`, `/etc/default`,
+  `/etc/cgr` (RESTCONF datastore) and `/root` are kept by GNS3 when a node is stopped and started.
 * **Stop** the project before shutting down your computer, and close GNS3 normally.
 * To hand in configurations, use `./collect.py all` on the netauto station (one text file per
   device) or **File → Export portable project** in GNS3.
@@ -66,6 +66,7 @@ nodes:
         interfaces: my.interfaces, frr_config: my.frr.conf}   # optional pre-configuration
   pc1: {kind: vpcs, ip: 10.0.0.1/24, gw: 10.0.0.254, x: 0, y: 200}
   srv: {kind: host, role: server, ip: 10.9.0.10/24, gw: 10.9.0.1, x: 200, y: 200}
+  pc2: {kind: host, ip: dhcp, x: 400, y: 200}                  # DHCP client on eth1
   netauto: {kind: netauto, mgmt: 192.168.100.10, x: -300, y: 0}
 links:
   - [sw1:swp1, r9:swp1]
@@ -75,7 +76,7 @@ links:
 
 Kinds: `frr` (router/switch, `role: router|switch` only changes the icon), `host` (Linux,
 data port `eth1`), `netauto`, `vpcs`, `switch` (plain GNS3 Ethernet switch), `nat`.
-Optional per node: `ports` (default 8), `mgmt`, `ip`/`gw` (hosts and PCs).
+Optional per node: `ports` (default 8), `mgmt`, `ip`/`gw` (hosts and PCs; `ip: dhcp` for a DHCP client).
 
 **Coming from NVIDIA Air?** Export the simulation as JSON and convert it — same node and port names:
 

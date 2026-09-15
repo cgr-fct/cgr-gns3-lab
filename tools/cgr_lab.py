@@ -403,7 +403,7 @@ def _populate(api, args, settings, topo, name, pid, cid, mgmt):
             # inventory of this lab for the automation scripts (/root/lab/inventory.yml)
             inv = {"all": {
                 "vars": {"ansible_user": settings.get("user", "cgr"),
-                         "ansible_password": settings.get("password", "cgr"),
+                         "ansible_password": settings.get("password", "cgrlab"),
                          "ansible_python_interpreter": "/usr/bin/python3"},
                 "hosts": {n: {"ansible_host": dd["mgmt"]} for n, dd in nodes_def.items()
                           if dd["kind"] == "frr" and dd.get("mgmt")}}}
@@ -412,7 +412,9 @@ def _populate(api, args, settings, topo, name, pid, cid, mgmt):
                           + yaml.safe_dump(inv, sort_keys=False))
         elif kind == "host":
             content = "auto lo\niface lo inet loopback\n"
-            if d.get("ip"):
+            if str(d.get("ip", "")).lower() == "dhcp":
+                content += f"\nauto {d.get('dev', 'eth1')}\niface {d.get('dev', 'eth1')} inet dhcp\n"
+            elif d.get("ip"):
                 ip = ipaddress.ip_interface(d["ip"])
                 dev = d.get("dev", "eth1")
                 content += (f"\nauto {dev}\niface {dev} inet static\n    address {ip.ip}\n"
@@ -421,7 +423,10 @@ def _populate(api, args, settings, topo, name, pid, cid, mgmt):
                     content += f"    gateway {d['gw']}\n"
             api.post(f"/projects/{pid}/nodes/{nid}/files/etc/network/interfaces", data=content)
         elif kind == "vpcs" and d.get("ip"):
-            script = f"set pcname {nname}\nip {d['ip']}" + (f" {d['gw']}" if d.get("gw") else "") + "\n"
+            if str(d["ip"]).lower() == "dhcp":
+                script = f"set pcname {nname}\nip dhcp\n"
+            else:
+                script = f"set pcname {nname}\nip {d['ip']}" + (f" {d['gw']}" if d.get("gw") else "") + "\n"
             api.post(f"/projects/{pid}/nodes/{nid}/files/startup.vpc", data=script)
 
     # ---- links

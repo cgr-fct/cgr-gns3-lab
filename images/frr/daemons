@@ -18,6 +18,8 @@ vrrpd=yes
 pathd=no
 
 vtysh_enable=yes
+# 'datacenter' defaults (as on Cumulus Linux): eBGP works without a policy, faster timers
+frr_profile="datacenter"
 zebra_options="  -A 127.0.0.1 -s 90000000"
 mgmtd_options="  -A 127.0.0.1"
 bgpd_options="   -A 127.0.0.1"

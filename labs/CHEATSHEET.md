@@ -48,7 +48,7 @@ conf t
   ospf router-id 10.8.255.1
   default-information originate always
   area 1 range 10.8.0.0/22
-  area 32 virtual-link 5.5.5.5
+  area 1 virtual-link 10.8.255.9
  interface swp1
   ip ospf area 0
   ip ospf network point-to-point
@@ -89,9 +89,72 @@ Useful show commands: `show ip route`, `show ip ospf database`, `show ip ospf in
 > If you want a "loopback" subnet advertised with its real mask (e.g. /27, as on Cisco), create
 > a dummy interface instead: `auto lo1` / `iface lo1` / `    link-type dummy` / `    address 172.16.9.33/27`.
 
+## DHCP
+
+**Server** (ISC dhcpd) — `/etc/dhcp/dhcpd.conf`:
+```
+subnet 10.8.2.0 netmask 255.255.255.0 {
+  range 10.8.2.100 10.8.2.199;
+  option routers 10.8.2.1;
+  option domain-name-servers 10.8.100.10;
+}
+subnet 10.8.100.0 netmask 255.255.255.252 {     # the server's own link: declare it, even empty
+}
+```
+`/etc/default/isc-dhcp-server`: `INTERFACESv4="swp5"` (the interfaces where requests arrive), then
+`service isc-dhcp-server restart`. Check: `dhcpd -t` (syntax), `cat /var/lib/dhcp/dhcpd.leases`.
+
+**Relay** (ISC dhcrelay, on the switch that holds the SVI) — `/etc/default/isc-dhcp-relay`:
+```
+SERVERS="10.8.100.1"
+INTERFACES=""
+OPTIONS="-id vlan2 -id vlan3 -iu swp7 -iu swp8"
+```
+(`-id` = interfaces facing the clients, `-iu` = interfaces towards the server), then
+`service isc-dhcp-relay restart`. The server must have a route back to the relay's SVI subnets.
+
+**Clients:** Linux hosts `dhclient -r eth1; dhclient -v eth1`; VPCS `ip dhcp`.
+
+| Linux / ISC | Cumulus NVUE equivalent |
+|---|---|
+| `dhcpd.conf` subnet + `range` | `nv set service dhcp-server default pool 10.8.2.0/24 range …` |
+| `isc-dhcp-relay` SERVERS / `-id` / `-iu` | `nv set service dhcp-relay default server …` / `nv set service dhcp-relay default interface …` |
+
+## IS-IS (vtysh)
+
+```
+conf t
+ router isis CGR
+  net 49.0001.0100.0825.5001.00
+  is-type level-2-only
+ interface swp7
+  ip router isis CGR
+  isis network point-to-point
+ interface lo
+  ip router isis CGR
+  isis passive
+ end
+write memory
+```
+Show: `show isis neighbor`, `show isis database detail`, `show isis route`.
+
+## RESTCONF (every router/switch)
+
+`https://<eth0 address>/restconf`, user `cgr`, password `cgrlab`, YANG module `cgr-device`
+(`pyang -f tree yang/cgr-device@2026-09-15.yang` on netauto).
+
+```bash
+R=https://192.168.200.14/restconf/data/cgr-device:device
+curl -sk -u cgr:cgrlab "$R?content=config"                        # configuration
+curl -sk -u cgr:cgrlab "$R/state/route"                            # operational state
+curl -sk -u cgr:cgrlab -X PUT -H "Content-Type: application/yang-data+json" \
+     -d '{"cgr-device:svi": [{"vlan": 4, "address": ["10.8.4.1/24"]}]}' "$R/svi=4"
+curl -sk -u cgr:cgrlab -X DELETE "$R/svi=4"
+```
+
 ## Linux hosts (UserUbuntu*, servers)
 
-The hosts are small Debian containers; the data port is `eth1` (as in Air).
+The hosts are small Debian containers; the data port is `eth1`.
 
 ```bash
 ip addr add 10.8.2.10/24 dev eth1

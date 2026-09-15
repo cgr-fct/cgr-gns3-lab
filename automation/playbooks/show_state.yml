@@ -1,0 +1,24 @@
+# ansible-playbook playbooks/show_state.yml
+# Reads operational state over RESTCONF and prints a one-line summary per device.
+- name: Operational state via RESTCONF
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: GET the state container
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}/restconf/data/cgr-device:device/state"
+        user: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        headers: {Accept: application/yang-data+json}
+      register: st
+      delegate_to: localhost
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ st.json['cgr-device:state'].route | default([]) | length }} routes,
+          {{ st.json['cgr-device:state']['ospf-neighbor'] | default([]) | length }} OSPF neighbors,
+          {{ st.json['cgr-device:state']['bgp-neighbor'] | default([]) | selectattr('state', 'equalto', 'Established') | list | length }} BGP sessions up

@@ -1,6 +1,6 @@
 # Converted from NVIDIA Air export 'bba6da0e-ProjectCampusNetwork.json' by tools/air2gns3.py
-# Port names are the same as in Air. Every router/switch is an FRR container (ports keep the swpN names).
-name: proj1-campus
+# Port names are the same as in Air. The four user hosts get their address by DHCP.
+name: lab01-campus
 mgmt_subnet: 192.168.200.0/24
 mgmt_switch_pos: [-700, -400]
 nodes:
@@ -14,10 +14,10 @@ nodes:
   SpineRouter2: {kind: frr, role: router, ports: 13, mgmt: 192.168.200.3, x: 137, y: -210}
   Ubuntu-Server-5: {kind: host, role: server, x: -435, y: -550}
   UbuntuInternet: {kind: host, role: server, x: 375, y: -474}
-  UserUbuntu1: {kind: host, x: -296, y: 462}
-  UserUbuntu2: {kind: host, x: -134, y: 545}
-  UserUbuntu3: {kind: host, x: 123, y: 550}
-  UserUbuntu4: {kind: host, x: 435, y: 543}
+  UserUbuntu1: {kind: host, ip: dhcp, x: -296, y: 462}
+  UserUbuntu2: {kind: host, ip: dhcp, x: -134, y: 545}
+  UserUbuntu3: {kind: host, ip: dhcp, x: 123, y: 550}
+  UserUbuntu4: {kind: host, ip: dhcp, x: 435, y: 543}
   netauto: {kind: netauto, mgmt: 192.168.200.254, x: -700, y: -550}
 links:
 - ['Access1:swp1', 'Distribution1:swp1']

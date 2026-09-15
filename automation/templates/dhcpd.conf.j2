@@ -1,0 +1,24 @@
+# /etc/dhcp/dhcpd.conf rendered from cgr-device:device
+authoritative;
+default-lease-time 3600;
+max-lease-time 7200;
+{% for p in d.dhcp.server.pool | default([]) %}
+{% set net = p.subnet | ipnet %}
+
+subnet {{ net.network_address }} netmask {{ net.netmask }} {
+  range {{ p['range-start'] }} {{ p['range-end'] }};
+{% if p.gateway is defined %}
+  option routers {{ p.gateway }};
+{% endif %}
+{% if p['dns-server'] is defined %}
+  option domain-name-servers {{ p['dns-server'] | join(', ') }};
+{% endif %}
+  default-lease-time {{ p['lease-time'] | default(3600) }};
+}
+{% endfor %}
+{% for net in d.dhcp_extra_subnets %}
+
+# interface subnet without a pool (requests arrive here through relays)
+subnet {{ net.network_address }} netmask {{ net.netmask }} {
+}
+{% endfor %}

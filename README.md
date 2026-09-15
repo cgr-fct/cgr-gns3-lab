@@ -1,8 +1,9 @@
 # CGR — GNS3 labs for Network Configuration and Management
 
-Ready-to-run GNS3 labs for switching (campus), routing (OSPF, IS-IS, BGP) and network
-automation (Python, YAML, Jinja2, data models, SSH), built only from **free, lightweight
-containers**: an FRRouting router/switch, a Linux host/automation station, and GNS3's built-in PCs.
+Ready-to-run GNS3 labs for switching (campus, DHCP), routing (OSPF, IS-IS, BGP) and network
+automation (**YANG, RESTCONF**, YAML, Jinja2, Python, Ansible), built only from **free,
+lightweight containers**: an FRRouting router/switch with a RESTCONF server, a Linux
+host/automation station, and GNS3's built-in PCs.
 
 **The same kit for everyone:** Windows, Intel or Apple Silicon Macs, Linux — no licences, no
 nested virtualisation, and a complete lab uses well under 1 GB of RAM.
@@ -10,7 +11,7 @@ nested virtualisation, and a complete lab uses well under 1 GB of RAM.
 One command builds a whole lab — devices, cables, addresses, management network:
 
 ```bash
-python tools/cgr_lab.py build labs/lab01-campus-switching --start
+python tools/cgr_lab.py build labs/lab01-campus --start
 ```
 
 ## Quick start
@@ -30,30 +31,26 @@ Stuck? → [Troubleshooting](docs/06-troubleshooting.md). How it fits together �
 
 | Lab | Topics | Nodes |
 |---|---|---|
-| [00 First contact](labs/lab00-first-contact/README.md) | setup check, bridge + VLAN, first automation run | 2 switches, 2 PCs |
-| [01 Campus switching](labs/lab01-campus-switching/README.md) | VLANs, trunks, STP, SVIs, LACP | 3 switches, 4 PCs |
-| [02 OSPF](labs/lab02-ospf/README.md) | single/multi-area, costs, stub, summarisation | 4 routers, 3 PCs |
-| [03 IS-IS](labs/lab03-isis/README.md) | levels, areas, attached bit, metrics | 4 routers, 3 PCs |
-| [04 BGP](labs/lab04-bgp/README.md) | eBGP/iBGP, next-hop-self, local-pref, prepend, communities | 2 routers + 2 ISPs, 3 PCs |
+| [00 First contact](labs/lab00-first-contact/README.md) | setup check, bridge + VLAN, YAML intent, first RESTCONF requests | 2 switches, 2 PCs |
+| [01 Campus network](labs/lab01-campus/README.md) | VLANs, trunks, LACP, STP, SVIs, DHCP server + relay, OSPF / IS-IS between pods, summarisation, default route, automation | 8 switches/routers, 6 Linux hosts |
+| [02 OSPF](labs/lab02-ospf/README.md) | multi-area OSPF, DR election, summarisation, default route, the hidden issue | 7 routers, 1 switch |
+| [03 IS-IS](labs/lab03-isis/README.md) | levels, areas, attached bit, metrics, comparison with OSPF | 4 routers, 3 PCs |
+| [04 BGP](labs/lab04-bgp/README.md) | OSPF inside ASes, iBGP full mesh, eBGP, aggregation, local preference | 6 routers |
 
-### Project 1 (2025/2026 statements)
-
-| Lab | Content |
-|---|---|
-| [proj1-campus](labs/proj1-campus/README.md) | Part 1: campus (VLANs, bonds, SVIs, OSPF, summarisation, default route) — 8 switches/routers + 6 Linux hosts |
-| [proj1-ospf](labs/proj1-ospf/README.md) | Part 2: multi-area OSPF, DR, summarisation, default route, the hidden issue |
-| [proj1-bgp](labs/proj1-bgp/README.md) | Part 3: BGP scenario (6 routers) |
-
-Every lab has an **automation station** (`netauto`) on an out-of-band management network with
-the [automation toolkit](automation/README.md): an inventory generated for the lab, YAML intent
-validated by a schema, Jinja2 templates, config push with diff, bulk commands and backups, Ansible.
+Every lab has an **automation station** (`netauto`) on an out-of-band management network, and
+every router/switch runs a **RESTCONF server** for the YANG model `cgr-device`. The
+[automation toolkit](automation/README.md) provides the YANG module, a RESTCONF client, YAML
+intent validated against the model, Jinja2 templates, an idempotent deploy tool (SSH or
+RESTCONF), bulk commands and backups, and Ansible playbooks.
 
 ## How devices are configured
 
 | What | Where | Apply |
 |---|---|---|
 | Interfaces, bridges, VLANs, bonds, SVIs | `/etc/network/interfaces` (ifupdown2 — the syntax of Cumulus Linux) | `ifreload -a` |
-| OSPF, IS-IS, BGP, static routes | `vtysh` (FRRouting, Cisco-like CLI) | `write memory` |
+| OSPF, IS-IS, BGP, VRRP, static routes | `vtysh` (FRRouting, Cisco-like CLI) | `write memory` |
+| DHCP server / relay | `/etc/dhcp/dhcpd.conf`, `/etc/default/isc-dhcp-{server,relay}` | `service isc-dhcp-… restart` |
+| All of the above, model-driven | RESTCONF `https://<eth0>/restconf` or YAML intent (`cgr-device` YANG model) | automatic |
 
 Ports are named `swp1`, `swp2`, … (`eth0` is management). See the [cheat sheet](labs/CHEATSHEET.md).
 
@@ -61,16 +58,17 @@ Ports are named `swp1`, `swp2`, … (`eth0` is management). See the [cheat sheet
 
 | Node | Console (double-click in GNS3) | SSH |
 |---|---|---|
-| Routers / switches | root shell, no login | `cgr` / `cgr` |
+| Routers / switches | root shell, no login | `cgr` / `cgrlab` (also RESTCONF) |
 | Linux hosts, netauto | root shell, no login | — |
 
 ## Repository layout
 
 ```
 docs/          installation guides, overview, troubleshooting, instructor notes
-labs/          one folder per lab: README (tasks), topology.yml, configs/; CHEATSHEET.md
+labs/          one folder per lab: README (tasks), topology.yml; CHEATSHEET.md
 tools/         cgr_lab.py (build/start/stop labs via the GNS3 API), air2gns3.py, lab_settings.yml
-automation/    toolkit copied into the netauto station (/root/cgr)
+automation/    toolkit: YANG model, RESTCONF client+server, intent tool, templates, Ansible
+               (copied into the netauto station /root/cgr and into every router/switch)
 images/        Dockerfiles for the router/switch and the netauto/host images
 .github/       CI that builds the container images (amd64 + arm64)
 ```

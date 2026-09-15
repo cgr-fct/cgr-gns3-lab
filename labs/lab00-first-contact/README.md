@@ -2,7 +2,7 @@
 
 **Goal:** prove that your installation works end to end: the lab builds and starts, the
 management network works, a VLAN carries traffic between two PCs, and you can configure a
-switch from the automation station. Do this lab **before the first class**.
+switch from the automation station — with a YAML file over SSH and with RESTCONF. Do this lab **before the first class**.
 
 ```mermaid
 graph LR
@@ -37,7 +37,7 @@ On **netauto**:
 
 ```bash
 ping -c2 192.168.100.11
-ssh cgr@192.168.100.12          # password: cgr   (exit to come back)
+ssh cgr@192.168.100.12          # password: cgrlab   (exit to come back)
 ```
 
 ## 3. A VLAN across two switches (by hand)
@@ -89,8 +89,40 @@ Now `pc1> ping 10.0.0.2` works. Collect the result:
 ./collect.py all -c "bridge vlan show"
 ```
 
+## 5. RESTCONF
+
+Every switch runs a RESTCONF server (HTTPS, user `cgr`, password `cgrlab`) for the YANG module
+`cgr-device`. Still on **netauto**:
+
+```bash
+pyang -f tree yang/cgr-device@2026-09-15.yang | head -30     # the data model
+curl -sk -u cgr:cgrlab https://192.168.100.11/restconf | jq
+curl -sk -u cgr:cgrlab "https://192.168.100.11/restconf/data/cgr-device:device?content=config" | jq
+curl -sk -u cgr:cgrlab "https://192.168.100.11/restconf/data/cgr-device:device/state/interface=swp2" | jq
+```
+
+Change the description of sw1's port swp2 with a PATCH:
+
+```bash
+curl -sk -u cgr:cgrlab -X PATCH \
+  -H "Content-Type: application/yang-data+json" \
+  -d '{"cgr-device:interface": [{"name": "swp2", "description": "PC one"}]}' \
+  "https://192.168.100.11/restconf/data/cgr-device:device/interface=swp2" -w "%{http_code}\n"
+```
+
+and check it on sw1 (`grep -A2 "iface swp2" /etc/network/interfaces`, `ip -d link show swp2 | grep alias`).
+Now try to break it — the server validates every change against the YANG model:
+
+```bash
+./restconf.py -v sw1 put interface=swp3 '{"cgr-device:interface": [{"name": "swp3", "mode": "access"}]}'
+```
+
+What does the error say, and which statement of the YANG module causes it?
+
 ## Checklist (show this to your instructor)
 
 - [ ] `pc1> ping 10.0.0.2` works
 - [ ] `./apply_intent.py intent/lab00.yml --diff` reports no changes
 - [ ] You can explain what `--diff` compared and why the second push changed nothing
+- [ ] Your RESTCONF PATCH returned 204 and the new description is on sw1
+- [ ] You can explain the error of the invalid PUT

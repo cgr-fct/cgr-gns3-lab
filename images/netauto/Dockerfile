@@ -3,8 +3,8 @@
 # network and reaches every router/switch over SSH. Also used as the Linux
 # "host" node (environment CGR_ROLE=host).
 #
-# Includes: Python 3 + requests, PyYAML, Jinja2, jsonschema, paramiko,
-#           ansible-core, curl, jq, ssh, git, nano/vim.
+# Includes: Python 3 + requests, PyYAML, Jinja2, paramiko, yangson, pyang,
+#           ansible-core, curl, jq, ssh, dhclient, git, nano/vim.
 # The repo's automation/ folder is copied to /root/cgr (persistent in GNS3).
 # Build context must be the REPOSITORY ROOT:
 #   docker build -f images/netauto/Dockerfile -t cgr-netauto .
@@ -15,14 +15,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-      python3 python3-requests python3-yaml python3-jinja2 python3-jsonschema \
+      python3 python3-requests python3-yaml python3-jinja2 \
       python3-paramiko python3-venv python3-pip \
       curl jq openssh-client sshpass iputils-ping iproute2 traceroute \
-      tcpdump iperf3 netcat-openbsd \
+      tcpdump iperf3 netcat-openbsd isc-dhcp-client \
       git nano vim-tiny less bash-completion ca-certificates; \
     rm -rf /var/lib/apt/lists/*
 
-ARG EXTRA_PIP="ansible-core"
+ARG EXTRA_PIP="ansible-core yangson pyang"
 RUN if [ -n "$EXTRA_PIP" ]; then pip3 install --no-cache-dir --break-system-packages $EXTRA_PIP; fi
 
 COPY automation /root/cgr

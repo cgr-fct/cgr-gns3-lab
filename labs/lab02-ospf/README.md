@@ -1,94 +1,94 @@
-# Lab 02 — OSPFv2
+# Lab 02 — OSPF multi-area
 
-**Topics:** adjacencies, LSDB, single-area and multi-area OSPF, costs and path selection,
-stub / totally stubby areas, summarisation at the ABR.
+**Topics:** multi-area OSPF, area design, summarisation at an ABR, DR/BDR
+election on a broadcast segment, default route origination.
 
-**Nodes:** 4 routers, 3 PCs, netauto. Syntax: [cheat sheet](../CHEATSHEET.md).
+You configure the routing between the branches of an enterprise network with OSPF, as in the
+figure below (the figure uses Cisco interface names; the table maps them to the lab ports).
 
-```mermaid
-graph TB
-  pc1["pc1 172.16.1.10"] --- |swp3| r1
-  r1["r1<br/>lo 10.255.2.1"] --- |"swp1 10.2.12.0/30 swp1"| r2["r2<br/>lo 10.255.2.2"]
-  r1 --- |"swp2 10.2.13.0/30 swp1"| r3["r3<br/>lo 10.255.2.3"]
-  r2 --- |"swp2 10.2.24.0/30 swp1"| r4["r4<br/>lo 10.255.2.4"]
-  r3 --- |"swp2 10.2.34.0/30 swp2"| r4
-  r3 --- |swp3| pc3["pc3 172.16.3.10"]
-  r4 --- |swp3| pc4["pc4 172.16.4.10"]
-```
+![statement figure](statement-figure.png)
 
-| Link / LAN | Subnet | Addresses |
-|---|---|---|
-| r1–r2 | 10.2.12.0/30 | r1 .1, r2 .2 |
-| r1–r3 | 10.2.13.0/30 | r1 .1, r3 .2 |
-| r2–r4 | 10.2.24.0/30 | r2 .1, r4 .2 |
-| r3–r4 | 10.2.34.0/30 | r3 .1, r4 .2 |
-| pc1 LAN (r1 swp3) | 172.16.1.0/24 | r1 .1, pc1 .10 |
-| pc3 LAN (r3 swp3) | 172.16.3.0/24 | r3 .1, pc3 .10 |
-| pc4 LAN (r4 swp3) | 172.16.4.0/24 | r4 .1, pc4 .10 |
-| Loopbacks | 10.255.2.N/32 | rN |
-
-Management: r1 .31, r2 .32, r3 .33, r4 .34 (192.168.100.0/24).
+## Build it
 
 ```bash
 python tools/cgr_lab.py build labs/lab02-ospf --start
 ```
 
-### Configuration pattern
+## Port mapping (figure → lab)
 
-Addresses in `/etc/network/interfaces`, then `ifreload -a`:
+| Figure | Lab | Subnet | Area |
+|---|---|---|---|
+| R5 G0/1 — switch G0/0 | R5 **swp1** — SW **swp1** | 192.168.23.0/24 | 32 |
+| R4 G0/? — switch G0/2 | R4 **swp1** — SW **swp2** | 192.168.23.0/24 | 32 |
+| R1 G0/? — switch G0/1 | R1 **swp1** — SW **swp3** | 192.168.23.0/24 | 32 |
+| R1 G0/0 — R2 G0/0 | R1 **swp2** — R2 **swp1** | 192.168.34.0/24 | 0 |
+| R2 G0/1 — R3 G0/1 | R2 **swp2** — R3 **swp1** | 192.168.45.0/24 | 0 |
+| R5 G0/0 — R6 G0/0 | R5 **swp2** — R6 **swp1** | 192.168.13.0/24 | 43 |
+| R6 G0/0 — R7 G0/0 | R6 **swp2** — R7 **swp1** | 192.168.12.0/24 | 43 |
+
+Suggested host part: router *Rn* uses `.n` on every subnet (e.g. R1 = 192.168.23.1, R5 = 192.168.23.5).
+
+Loopbacks: R1 Lo0–Lo3 = 172.16.9.1/27, .33/27, .65/27, .97/27 (area 20) ·
+R3 172.16.0.1/27 (area 34) · R4 172.16.12.1/27 (area 32) · R5 172.16.11.1/27 (area 32) ·
+R7 172.16.10.1/27 (area 43). Management: R1 .31 … R7 .37, SW .30, netauto .254 (192.168.200.0/24).
+
+## Requirements
+
+Implement the following to obtain full connectivity between all addresses of the topology:
+
+1. Configure the interfaces with the addresses of the figure.
+2. Configure OSPF with the interfaces in the areas shown in the figure.
+3. Configure R1 to **summarise area 20** with the most specific mask possible.
+4. The segment R1–R4–R5 is a **broadcast** network with **R1 as the DR**; configure the switch
+   (SW) ports as access ports in VLAN 1.
+5. Configure R3 to **always originate a default route**.
+6. Figure out the **hidden issue** in the topology that you need to address to have full
+   connectivity, and fix it.
+7. Verify connectivity between all addresses of the topology.
+
+## How to configure
+
+See the **[cheat sheet](../CHEATSHEET.md)**. In short, for R1:
+
 ```
+# /etc/network/interfaces  (then: ifreload -a)
 auto lo
 iface lo inet loopback
-    address 10.255.2.3/32
-
+    address 172.16.9.1/27
+    address 172.16.9.33/27
+    ...
 auto swp1
 iface swp1
-    address 10.2.13.2/30
+    address 192.168.23.1/24
 ```
-Routing in `vtysh`:
 ```
+vtysh
 conf t
- router ospf
-  ospf router-id 10.255.2.3
  interface swp1
-  ip ospf area 0
-  ip ospf network point-to-point
- interface lo
-  ip ospf area 0
- end
-write memory
-show ip ospf neighbor
+  ip ospf area 32
+  ip ospf network broadcast
+  ...
 ```
 
-## Part A — Single area
-Put **everything** in area 0 (links, loopbacks, LANs — make the LAN interfaces passive).
-Verify full reachability (`pc1> ping 172.16.4.10`) and explain `show ip ospf database`
-(how many router LSAs? any network LSAs? why?).
+The switch **SW** is a lab switch node: a VLAN-aware `bridge` with swp1–3
+as `bridge-access 1` ports (see the cheat sheet).
 
-## Part B — Costs and path selection
-1. From pc1, `trace 172.16.4.10`. Which path is used? Why? (`show ip route 172.16.4.0/24`)
-2. Change interface costs so that r1 reaches r4's LAN **via r3** (r1→r3→r4).
-   (`ip ospf cost 100` under the interface.)
-3. What happens to the path when you shut the r3–r4 link?
+Notes:
+* Addresses on `lo` are advertised by OSPF as /32 routes. That does not change the
+  summarisation task (the most specific prefix covering the four loopbacks); to advertise them
+  as /27 like on the Cisco figure, use dummy interfaces (see the note in the cheat sheet).
+* Verification from any router: `ping -I <source-address> <destination>`,
+  `traceroute -s <source-address> <destination>`.
 
-## Part C — Multi-area
-Re-design: **area 0** = r1–r2 link, r1/r2 loopbacks and pc1 LAN. **area 1** = r1–r3, r3–r4,
-r2–r4 links, r3/r4 loopbacks and LANs. r1 and r2 are now ABRs.
-Look at the LSDB on r1 and on r3: which LSA types appear, and who generates them?
+## What to deliver
 
-## Part D — Stub areas and summarisation
-1. Make area 1 a **stub** area, then **totally stubby**. Compare `show ip route` on r3 each time.
-   (`area 1 stub` on every router of area 1; for totally stubby add `area 1 stub no-summary` on the ABRs.)
-2. On the ABRs summarise area 1's LANs as one prefix. Which prefix covers 172.16.3.0/24 and
-   172.16.4.0/24 but not 172.16.1.0/24? (`area 1 range <prefix>` under `router ospf`.)
-   Check the result on r1, r2 and with `pc1> trace 172.16.4.10`.
-
-## Deliverables
-Final configs (`./collect.py all` on netauto), LSDB excerpts with your explanation,
-traceroutes for Part B.
+The configuration of every router and of SW (`./collect.py all` on netauto), the relevant
+`show ip ospf database` / `show ip route` outputs, your explanation of the hidden issue and of
+the fix, and the connectivity tests.
 
 ## Automation corner
-`apply_intent.py` supports OSPF (`ospf.router_id`, `ospf.interfaces.<if>.area|network_type|passive`).
-Write `intent/lab02.yml` for Part A, check it with `--dry-run` and `--diff`, and push it.
-Then use `./collect.py all -c "vtysh -c 'show ip ospf neighbor json'" --json` to verify every
-adjacency from a script.
+
+Everything in this lab can be expressed in the `cgr-device` model (look at the `ospf`
+container in `pyang -f tree yang/cgr-device@2026-09-15.yang`). Write the intent for R1 and
+R5, check it with `./apply_intent.py intent/ospf.yml --diff`, and read the adjacencies back with
+`./restconf.py R1 get state/ospf-neighbor --content nonconfig`.

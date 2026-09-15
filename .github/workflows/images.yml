@@ -21,7 +21,7 @@ jobs:
       matrix:
         include:
           - name: cgr-frr
-            context: images/frr
+            context: .
             file: images/frr/Dockerfile
           - name: cgr-netauto
             context: .
@@ -58,8 +58,9 @@ jobs:
       - name: FRR image starts and daemons run
         run: |
           docker run -d --name r1 --privileged ghcr.io/$OWNER/cgr-frr:latest sleep infinity
-          docker exec r1 bash -c '/usr/lib/frr/frrinit.sh start && sleep 3 && vtysh -c "show version" && ifreload --version'
+          docker exec r1 bash -c '/usr/lib/frr/frrinit.sh start && sleep 3 && vtysh -c "show version" && ifreload --version && dhcpd --version'
+          docker exec r1 bash -c 'cd /usr/local/lib/cgr && python3 apply_intent.py intent/lab00.yml --check'
       - name: netauto image has the toolkit
         run: |
           docker run --rm ghcr.io/$OWNER/cgr-netauto:latest bash -c \
-            'cd /root/cgr && python3 apply_intent.py intent/lab04-bgp-example.yml --dry-run && ansible --version | head -1'
+            'cd /root/cgr && python3 apply_intent.py intent/lab00.yml --dry-run && pyang -f tree yang/*.yang && ansible --version | head -1'

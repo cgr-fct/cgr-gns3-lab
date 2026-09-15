@@ -3,7 +3,7 @@
 **Topics:** NET addresses, Level-1 / Level-2 / Level-1-2 routers, areas, the attached bit,
 metrics (wide), comparison with OSPF.
 
-**Nodes:** 4 routers, 3 PCs, netauto — same topology as Lab 02. Syntax: [cheat sheet](../CHEATSHEET.md).
+**Nodes:** 4 routers, 3 PCs, netauto. Syntax: [cheat sheet](../CHEATSHEET.md).
 
 ```mermaid
 graph TB
@@ -16,9 +16,18 @@ graph TB
   r4 --- |swp3| pc4["pc4 172.16.4.10"]
 ```
 
-Addressing: identical to Lab 02 but with `10.3.x.x` for links and `10.255.3.N` loopbacks
-(r1–r2 10.3.12.0/30 → r1 .1 / r2 .2, etc.). LANs 172.16.1/3/4.0/24 with the router at `.1`.
-Management: r1 .31 … r4 .34.
+| Link / LAN | Subnet | Addresses |
+|---|---|---|
+| r1–r2 | 10.3.12.0/30 | r1 .1, r2 .2 |
+| r1–r3 | 10.3.13.0/30 | r1 .1, r3 .2 |
+| r2–r4 | 10.3.24.0/30 | r2 .1, r4 .2 |
+| r3–r4 | 10.3.34.0/30 | r3 .1, r4 .2 |
+| pc1 LAN (r1 swp3) | 172.16.1.0/24 | r1 .1, pc1 .10 |
+| pc3 LAN (r3 swp3) | 172.16.3.0/24 | r3 .1, pc3 .10 |
+| pc4 LAN (r4 swp3) | 172.16.4.0/24 | r4 .1, pc4 .10 |
+| Loopbacks | 10.255.3.N/32 | rN |
+
+Management: r1 .31 … r4 .34 (192.168.100.0/24), netauto .10.
 
 ```bash
 python tools/cgr_lab.py build labs/lab03-isis --start
@@ -60,12 +69,18 @@ Make r3 and r4 `level-1-2`. What changes for the r3–r4 link? Compare the L1 an
 
 ## Part D — Metrics and comparison
 1. Make r1 reach pc4 through r3 by changing `isis metric`.
-2. Write a short table comparing what you saw in OSPF (Lab 02) and IS-IS: areas vs levels,
+2. Write a short table comparing OSPF (Lab 02) and IS-IS: areas vs levels,
    where area borders sit (on routers vs on links), LSA/LSP types, default route in stub/L1 areas.
 
 ## Deliverables
 `show running-config` of all routers per part, answers to the questions, the comparison table.
 
 ## Automation corner
-IS-IS is not in the intent model. Add it: an `isis` section in `schema/intent.schema.yml`,
-rendering in `templates/frr.conf.j2`, then push with `./apply_intent.py intent/lab03.yml`.
+IS-IS is part of the `cgr-device` model (`isis: {net, is-type, interface: [{name, passive,
+network-type, metric}]}`). Write `intent/isis.yml` for Part A, push it with
+`./apply_intent.py intent/isis.yml`, then do Part B **only with RESTCONF** — e.g.
+
+```bash
+./restconf.py r3 patch isis '{"cgr-device:isis": {"is-type": "level-1", "net": "49.0001.0102.5500.3003.00"}}'
+./restconf.py r3 get state/route --content nonconfig
+```

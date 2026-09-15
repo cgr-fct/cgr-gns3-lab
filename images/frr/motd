@@ -1,6 +1,9 @@
 
-  CGR lab node (FRRouting + ifupdown2)  -  ports: eth0 = mgmt, swp1..swpN = data
+  CGR router/switch  -  ports: eth0 = management, swp1..swpN = data
   - interfaces : nano /etc/network/interfaces   then   ifreload -a
   - routing    : vtysh   (write memory  saves /etc/frr/frr.conf)
-  - checks     : ip -br addr | bridge vlan | vtysh -c "show ip route"
+  - DHCP       : /etc/dhcp/dhcpd.conf + /etc/default/isc-dhcp-server  then  service isc-dhcp-server restart
+                 relay: /etc/default/isc-dhcp-relay                    then  service isc-dhcp-relay restart
+  - checks     : ip -br addr | bridge vlan show | vtysh -c "show ip route"
+  - RESTCONF   : https://<eth0 address>/restconf   (user cgr / password cgrlab)
 
