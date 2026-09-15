@@ -1,8 +1,9 @@
 # CGR automation station ("cgr-netauto")
 # The "network engineer's laptop" inside the lab: it sits on the management
-# network and can reach every device's NVUE REST API (Cumulus) and SSH.
+# network and reaches every router/switch over SSH. Also used as the Linux
+# "host" node (environment CGR_ROLE=host).
 #
-# Includes: Python 3 + requests, PyYAML, Jinja2, jsonschema, paramiko/netmiko,
+# Includes: Python 3 + requests, PyYAML, Jinja2, jsonschema, paramiko,
 #           ansible-core, curl, jq, ssh, git, nano/vim.
 # The repo's automation/ folder is copied to /root/cgr (persistent in GNS3).
 # Build context must be the REPOSITORY ROOT:
@@ -21,7 +22,7 @@ RUN set -eux; \
       git nano vim-tiny less bash-completion ca-certificates; \
     rm -rf /var/lib/apt/lists/*
 
-ARG EXTRA_PIP="ansible-core netmiko"
+ARG EXTRA_PIP="ansible-core"
 RUN if [ -n "$EXTRA_PIP" ]; then pip3 install --no-cache-dir --break-system-packages $EXTRA_PIP; fi
 
 COPY automation /root/cgr

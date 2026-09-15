@@ -1,11 +1,8 @@
 # Lab 00 — First contact (setup check)
 
-**Goal:** prove that your GNS3 installation works end to end: Cumulus VX boots, the
-management network works, a VLAN carries traffic between two PCs, and you can talk to a
-switch through its REST API. Do this lab **before the first class**.
-
-**Resources:** 2 × Cumulus VX (2 GB each) + 2 VPCS + 1 container ≈ 4.5 GB RAM.
-Lite version (`--lite`): ≈ 0.3 GB RAM.
+**Goal:** prove that your installation works end to end: the lab builds and starts, the
+management network works, a VLAN carries traffic between two PCs, and you can configure a
+switch from the automation station. Do this lab **before the first class**.
 
 ```mermaid
 graph LR
@@ -17,87 +14,35 @@ graph LR
   mgmt -.- |eth0 .12| sw2
 ```
 
-| Device | eth0 (mgmt) | Login |
-|---|---|---|
-| sw1 | 192.168.100.11/24 | cumulus / CumulusLab1! |
-| sw2 | 192.168.100.12/24 | cumulus / CumulusLab1! |
-| netauto | 192.168.100.10/24 | (console opens a root shell) |
-
 ## 1. Build and start
 
 ```bash
 python tools/cgr_lab.py build labs/lab00-first-contact --start
-python tools/cgr_lab.py bootstrap lab00-first-contact     # wait ~3 min after start
 ```
 
-In GNS3: **File → Open project → lab00-first-contact**. Double-click a device to open its console.
+In GNS3: **File → Open project → lab00-first-contact**. The first start downloads the images
+(a few minutes). Double-click a node to open its console.
 
-> No automatic bootstrap? Open the sw1 console, log in as `cumulus` / `cumulus`, set the new
-> password to `CumulusLab1!` and paste the lines from `bootstrap/sw1.txt`. Same for sw2.
+## 2. Look around
 
-## 2. Management network
-
-On the **netauto** console:
+On **sw1**:
 
 ```bash
-ping -c2 192.168.100.11
-ping -c2 192.168.100.12
-ssh cumulus@192.168.100.11        # password CumulusLab1!
+ip -br link            # eth0 = management, swp1..swp7 = switch ports
+cat /etc/network/interfaces
+vtysh -c "show version"
 ```
-
-## 3. A VLAN across two switches (CLI)
-
-On **sw1** (then repeat on sw2 — same commands):
-
-```bash
-nv set bridge domain br_default vlan 10
-nv set interface swp1 bridge domain br_default vlan 10       # trunk to the other switch
-nv set interface swp2 bridge domain br_default access 10     # port to the PC
-nv config diff                                               # what will change?
-nv config apply -y
-nv show bridge domain br_default vlan
-```
-
-The PCs already have their addresses (see `show ip` in the VPCS console). On **pc1**:
-
-```
-ping 10.0.0.2
-```
-
-## 4. The same switch over the REST API
 
 On **netauto**:
 
 ```bash
-cd /root/cgr
-./nvue.py show sw1 /bridge/domain/br_default
-./nvue.py show sw1 /interface/swp2
-./curl_examples.sh sw1
+ping -c2 192.168.100.11
+ssh cgr@192.168.100.12          # password: cgr   (exit to come back)
 ```
 
-Now undo the CLI work on sw2 (`nv unset interface swp2 bridge domain br_default` then `nv config apply -y`),
-check that the ping fails, and put it back **through the API**:
+## 3. A VLAN across two switches (by hand)
 
-```bash
-./apply_intent.py intent/lab00.yml --dry-run -d sw2    # read the JSON first
-./apply_intent.py intent/lab00.yml -d sw2
-```
-
-## Checklist (show this to your instructor)
-
-- [ ] `pc1> ping 10.0.0.2` works
-- [ ] `./nvue.py show sw2 /interface/swp2` shows `access: 10`
-- [ ] You can explain the four REST calls printed by `curl_examples.sh`
-
-## Lite version
-
-```bash
-python tools/cgr_lab.py build labs/lab00-first-contact --lite --start
-```
-
-sw1/sw2 are then FRR containers with Cumulus-style port names. Configure them the
-"classic Cumulus" way: `nano /etc/network/interfaces` (see below), then `ifreload -a`.
-Automation uses SSH instead of NVUE: `./apply_intent.py intent/lab00.yml --lite`.
+On **sw1**, add to the end of `/etc/network/interfaces` (`nano /etc/network/interfaces`):
 
 ```
 auto swp1
@@ -114,3 +59,38 @@ iface bridge
     bridge-ports swp1 swp2
     bridge-vids 10
 ```
+
+Apply and check:
+
+```bash
+ifreload -a
+bridge vlan show
+bridge fdb show br bridge | grep -v permanent
+```
+
+Do **not** configure sw2 yet. On **pc1**: `ping 10.0.0.2` — it fails. Why?
+
+## 4. The same thing from the automation station
+
+On **netauto**:
+
+```bash
+cd /root/cgr
+cat intent/lab00.yml
+./apply_intent.py intent/lab00.yml --dry-run        # the configuration it generates
+./apply_intent.py intent/lab00.yml --diff           # what would change on sw1 and sw2
+./apply_intent.py intent/lab00.yml                  # push it
+./apply_intent.py intent/lab00.yml --diff           # nothing left to change
+```
+
+Now `pc1> ping 10.0.0.2` works. Collect the result:
+
+```bash
+./collect.py all -c "bridge vlan show"
+```
+
+## Checklist (show this to your instructor)
+
+- [ ] `pc1> ping 10.0.0.2` works
+- [ ] `./apply_intent.py intent/lab00.yml --diff` reports no changes
+- [ ] You can explain what `--diff` compared and why the second push changed nothing

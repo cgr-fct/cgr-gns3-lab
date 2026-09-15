@@ -1,0 +1,47 @@
+# ansible-playbook playbooks/deploy_intent.yml -e intent=intent/lab00.yml
+# The same job as apply_intent.py, written as an Ansible playbook (same templates).
+- name: Deploy intent
+  hosts: all
+  gather_facts: false
+  vars:
+    intent_data: "{{ lookup('file', playbook_dir ~ '/../' ~ intent) | from_yaml }}"
+    marker: "# ---- your data-plane configuration goes below"
+  tasks:
+    - name: Skip devices that are not in the intent file
+      ansible.builtin.meta: end_host
+      when: inventory_hostname not in intent_data.devices
+
+    - name: Select this device's intent
+      ansible.builtin.set_fact:
+        d: "{{ intent_data.devices[inventory_hostname] }}"
+        name: "{{ inventory_hostname }}"
+
+    - name: Read the current interfaces file
+      ansible.builtin.slurp:
+        src: /etc/network/interfaces
+      register: eni
+      become: true
+
+    - name: Write the interfaces file (management part kept)
+      ansible.builtin.copy:
+        content: "{{ (eni.content | b64decode).split(marker)[0] | trim }}\n\n{{ marker }} (managed by automation)\n{{ lookup('template', '../templates/frr_interfaces.j2') }}"
+        dest: /etc/network/interfaces
+      become: true
+      register: eni_changed
+
+    - name: Apply interfaces
+      ansible.builtin.shell: mkdir -p /run/network && ifreload -a
+      become: true
+      when: eni_changed.changed
+
+    - name: Render the FRR configuration
+      ansible.builtin.template:
+        src: ../templates/frr.conf.j2
+        dest: /etc/frr/frr.conf.new
+      become: true
+      register: frr_changed
+
+    - name: Load it (only the differences are applied)
+      ansible.builtin.shell: /usr/lib/frr/frr-reload.py --reload /etc/frr/frr.conf.new && vtysh -c 'write memory'
+      become: true
+      when: frr_changed.changed

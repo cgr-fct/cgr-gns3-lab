@@ -1,17 +1,17 @@
 # Project 1, part 2 - OSPF multi-area (redrawn from the 2025/2026 statement figure)
-# Build with --lite for Apple Silicon (all FRR containers, ~0.5 GB RAM in total).
+# All routers and the switch are FRR containers (~0.4 GB RAM in total).
 name: proj1-ospf
 mgmt_subnet: 192.168.200.0/24
 mgmt_switch_pos: [-650, -350]
 nodes:
-  R4:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.34, x: -230, y: -330}
-  R5:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.35, x: -470, y: -120}
-  SW:  {kind: cumulus, role: switch, ports: 4, mgmt: 192.168.200.30, x: -230, y: -120}
-  R1:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.31, x: 20,   y: -120}
-  R2:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.32, x: 20,   y: 150}
-  R3:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.33, x: 330,  y: 150}
-  R6:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.36, x: -470, y: 60}
-  R7:  {kind: cumulus, role: router, ports: 4, mgmt: 192.168.200.37, x: -470, y: 250}
+  R4:  {kind: frr, role: router, ports: 4, mgmt: 192.168.200.34, x: -230, y: -330}
+  R5:  {kind: frr, role: router, ports: 4, mgmt: 192.168.200.35, x: -470, y: -120}
+  SW:  {kind: frr, role: switch, ports: 4, mgmt: 192.168.200.30, x: -230, y: -120}
+  R1:  {kind: frr, role: router, ports: 4, mgmt: 192.168.200.31, x: 20,   y: -120}
+  R2:  {kind: frr, role: router, ports: 4, mgmt: 192.168.200.32, x: 20,   y: 150}
+  R3:  {kind: frr, role: router, ports: 4, mgmt: 192.168.200.33, x: 330,  y: 150}
+  R6:  {kind: frr, role: router, ports: 4, mgmt: 192.168.200.36, x: -470, y: 60}
+  R7:  {kind: frr, role: router, ports: 4, mgmt: 192.168.200.37, x: -470, y: 250}
   netauto: {kind: netauto, mgmt: 192.168.200.254, x: -650, y: -480}
 links:
   - [R5:swp1, SW:swp1]     # 192.168.23.0/24  area 32 (broadcast segment)

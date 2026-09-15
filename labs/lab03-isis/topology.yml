@@ -1,4 +1,4 @@
-# Lab 03 - IS-IS: levels, areas, metrics (all FRR - Cumulus NVUE has no IS-IS support)
+# Lab 03 - IS-IS: levels, areas, metrics
 name: lab03-isis
 nodes:
   r1:      {kind: frr,     mgmt: 192.168.100.31, x: -180, y: -100}

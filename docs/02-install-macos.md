@@ -1,45 +1,44 @@
-# Install on macOS
+# Install on macOS (Apple Silicon or Intel)
 
-First check your chip:  → *About This Mac*.
+Time: ~30 min. Needs ~10 GB free disk and 8 GB RAM.
 
-* **Apple Silicon (M1–M4)** → section A. Cumulus VX is an x86 image and cannot run at usable
-  speed on ARM, so you will do the labs in **lite mode** (FRR containers). Everything in
-  the labs works except the NVUE-specific commands and the NVUE REST API calls; for those,
-  pair up with a colleague who runs the full labs, or use a lab PC.
-* **Intel** → section B (full labs, like Windows).
+> **Use exactly GNS3 version `2.2.54`** for the GUI and the GNS3 VM. It is the last 2.2 release
+> with an Apple Silicon GNS3 VM, and the whole class uses the same version.
 
-> **Use exactly GNS3 version `2.2.54`** for the GUI and the VM. It is the last 2.2 release that
-> ships an Apple Silicon (ARM64) GNS3 VM, and the whole class uses the same version.
+## 1. VMware Fusion Pro (free)
 
-## A. Apple Silicon
+Download it from the Broadcom support portal (free account): <https://support.broadcom.com> →
+*My Downloads* → *VMware Fusion*. Install it and open it once to grant the permissions macOS asks for.
 
-1. **VMware Fusion Pro** (free): download it from the Broadcom support portal (free account):
-   <https://support.broadcom.com> → *My Downloads* → *VMware Fusion*. Install and open it once
-   to grant the permissions macOS asks for.
-2. From <https://github.com/GNS3/gns3-gui/releases/tag/v2.2.54> download
-   `GNS3-2.2.54.dmg` and `GNS3.VM.ARM64.2.2.54.zip`.
-3. Install GNS3 (drag to *Applications*; the first time, right-click → *Open*).
-4. Unzip the VM and open the `.ova`/`.vmx` with VMware Fusion (*File → Import*). Don't start it.
-5. Start GNS3 → *Setup Wizard* → **Run appliances in a virtual machine** → VMware →
-   **GNS3 VM**, 2–4 vCPUs, **4096 MB** RAM (lite labs need little) → Finish.
+## 2. GNS3 and the GNS3 VM
+
+From <https://github.com/GNS3/gns3-gui/releases/tag/v2.2.54> download `GNS3-2.2.54.dmg` and the VM
+for your Mac ( → *About This Mac*):
+
+| Chip | GNS3 VM file |
+|---|---|
+| Apple M1–M4 | `GNS3.VM.ARM64.2.2.54.zip` |
+| Intel | `GNS3.VM.VMware.Workstation.2.2.54.zip` (Fusion opens it) |
+
+1. Install GNS3 (drag to *Applications*; the first time, right-click → *Open*).
+2. Unzip the VM and import it in VMware Fusion (*File → Import*, or open the `.ova`/`.vmx`). Don't start it.
+3. Start GNS3 → *Setup Wizard* → **Run appliances in a virtual machine** → **VMware** →
+   **GNS3 VM**, **2 vCPUs, 2048 MB RAM** → Finish.
    The GNS3 VM must turn green in the *Servers Summary* panel.
-6. Python and the lab tools (Terminal):
-   ```bash
-   xcode-select --install          # provides git and python3 if you don't have them
-   cd ~/Documents
-   git clone <REPO-URL> cgr-gns3-lab && cd cgr-gns3-lab
-   python3 -m venv .venv && source .venv/bin/activate
-   pip install -r tools/requirements.txt
-   python tools/cgr_lab.py check
-   ```
-   `check` will warn that there is no Cumulus image / no KVM — that is expected.
-7. Build every lab with `--lite`, e.g.
-   `python tools/cgr_lab.py build labs/lab00-first-contact --lite --start`.
-   Skip [04 – Images](04-images.md) except the *containers* part.
 
-## B. Intel Mac
+## 3. Python and the lab tools
 
-Same as Apple Silicon, but download `GNS3.VM.VMware.Workstation.2.2.54.zip` (Fusion opens it)
-and give the VM 8 GB RAM. In VMware Fusion, open the VM settings → *Processors & Memory* →
-*Advanced* → tick **Enable hypervisor applications in this virtual machine**. The GNS3 VM
-console must show `KVM support available: True`. Then continue with [04 – Images](04-images.md).
+In Terminal:
+
+```bash
+xcode-select --install          # provides git and python3 if you don't have them
+cd ~/Documents
+git clone <REPO-URL> cgr-gns3-lab && cd cgr-gns3-lab
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r tools/requirements.txt
+python tools/cgr_lab.py check
+```
+
+(In every new Terminal window: `cd ~/Documents/cgr-gns3-lab && source .venv/bin/activate`.)
+
+Continue with [Building a lab](04-build-a-lab.md) and [Lab 00](../labs/lab00-first-contact/README.md).

@@ -62,4 +62,4 @@ jobs:
       - name: netauto image has the toolkit
         run: |
           docker run --rm ghcr.io/$OWNER/cgr-netauto:latest bash -c \
-            'cd /root/cgr && python3 apply_intent.py intent/lab04-bgp-example.yml --cli && ansible --version | head -1'
+            'cd /root/cgr && python3 apply_intent.py intent/lab04-bgp-example.yml --dry-run && ansible --version | head -1'

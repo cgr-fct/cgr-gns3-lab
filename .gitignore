@@ -5,3 +5,4 @@ __pycache__/
 automation/backups/
 automation/out/
 .DS_Store
+automation/reports/

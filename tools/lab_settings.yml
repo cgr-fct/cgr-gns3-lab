@@ -1,21 +1,12 @@
-# Settings shared by all labs. Your instructor may ask you to change `cumulus.image`.
-cumulus:
-  # File name of the Cumulus VX QEMU image exactly as uploaded to GNS3
-  # (you can also override it with the environment variable CGR_CUMULUS_IMAGE)
-  image: cumulus-linux-5.16.0-vx-amd64-qemu.qcow2
-  ram: 2048          # MB per switch. 1536 works for small labs if you are short on RAM
-  cpus: 2
-  ports: 8           # eth0 (management) + swp1..swp7
-  user: cumulus
-  default_password: cumulus   # factory password, changed at first login
-
-# Password used for every lab device after bootstrap (Cumulus requires a
-# non-default password before the NVUE REST API accepts requests)
-password: "CumulusLab1!"
+# Settings shared by all labs.
 
 # Container images used in the labs (multi-arch: amd64 + arm64)
 frr_image: ghcr.io/CHANGE-ME/cgr-frr:latest
 netauto_image: ghcr.io/CHANGE-ME/cgr-netauto:latest
 
-# Out-of-band management network shared by all labs
+# Out-of-band management network (labs can override it with mgmt_subnet)
 mgmt_subnet: 192.168.100.0/24
+
+# Login of the router/switch nodes (set in images/frr/Dockerfile)
+user: cgr
+password: cgr

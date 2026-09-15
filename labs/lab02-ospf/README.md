@@ -3,16 +3,14 @@
 **Topics:** adjacencies, LSDB, single-area and multi-area OSPF, costs and path selection,
 stub / totally stubby areas, summarisation at the ABR.
 
-**Devices:** r1, r2 = Cumulus VX (configure with **NVUE**); r3, r4 = FRR containers
-(configure with **vtysh** + `/etc/network/interfaces`). Both use FRRouting underneath, so the
-`show` commands are the same. **Resources:** ≈ 4.5 GB (lite: < 0.5 GB).
+**Nodes:** 4 routers, 3 PCs, netauto. Syntax: [cheat sheet](../CHEATSHEET.md).
 
 ```mermaid
 graph TB
   pc1["pc1 172.16.1.10"] --- |swp3| r1
-  r1["r1 (Cumulus)<br/>lo 10.255.2.1"] --- |"swp1 10.2.12.0/30 swp1"| r2["r2 (Cumulus)<br/>lo 10.255.2.2"]
-  r1 --- |"swp2 10.2.13.0/30 swp1"| r3["r3 (FRR)<br/>lo 10.255.2.3"]
-  r2 --- |"swp2 10.2.24.0/30 swp1"| r4["r4 (FRR)<br/>lo 10.255.2.4"]
+  r1["r1<br/>lo 10.255.2.1"] --- |"swp1 10.2.12.0/30 swp1"| r2["r2<br/>lo 10.255.2.2"]
+  r1 --- |"swp2 10.2.13.0/30 swp1"| r3["r3<br/>lo 10.255.2.3"]
+  r2 --- |"swp2 10.2.24.0/30 swp1"| r4["r4<br/>lo 10.255.2.4"]
   r3 --- |"swp2 10.2.34.0/30 swp2"| r4
   r3 --- |swp3| pc3["pc3 172.16.3.10"]
   r4 --- |swp3| pc4["pc4 172.16.4.10"]
@@ -33,30 +31,21 @@ Management: r1 .31, r2 .32, r3 .33, r4 .34 (192.168.100.0/24).
 
 ```bash
 python tools/cgr_lab.py build labs/lab02-ospf --start
-python tools/cgr_lab.py bootstrap lab02-ospf          # r1, r2 only (r3/r4 need no bootstrap)
 ```
 
-### How to configure each kind of router
+### Configuration pattern
 
-**r1 / r2 (NVUE):**
-```bash
-nv set interface lo ip address 10.255.2.1/32
-nv set interface swp1 ip address 10.2.12.1/30
-nv set vrf default router ospf router-id 10.255.2.1
-nv set interface swp1 router ospf area 0
-nv set interface swp1 router ospf network-type point-to-point
-nv set interface lo router ospf area 0
-nv config apply -y
-nv show vrf default router ospf neighbor          # or: sudo vtysh -c "show ip ospf neighbor"
+Addresses in `/etc/network/interfaces`, then `ifreload -a`:
 ```
+auto lo
+iface lo inet loopback
+    address 10.255.2.3/32
 
-**r3 / r4 (FRR container):** addresses in `/etc/network/interfaces`, then `ifreload -a`:
-```
 auto swp1
 iface swp1
     address 10.2.13.2/30
 ```
-routing in `vtysh`:
+Routing in `vtysh`:
 ```
 conf t
  router ospf
@@ -64,8 +53,11 @@ conf t
  interface swp1
   ip ospf area 0
   ip ospf network point-to-point
+ interface lo
+  ip ospf area 0
  end
 write memory
+show ip ospf neighbor
 ```
 
 ## Part A — Single area
@@ -76,7 +68,7 @@ Verify full reachability (`pc1> ping 172.16.4.10`) and explain `show ip ospf dat
 ## Part B — Costs and path selection
 1. From pc1, `trace 172.16.4.10`. Which path is used? Why? (`show ip route 172.16.4.0/24`)
 2. Change interface costs so that r1 reaches r4's LAN **via r3** (r1→r3→r4).
-   NVUE: `nv set interface swp1 router ospf cost 100`; FRR: `ip ospf cost 100`.
+   (`ip ospf cost 100` under the interface.)
 3. What happens to the path when you shut the r3–r4 link?
 
 ## Part C — Multi-area
@@ -86,16 +78,17 @@ Look at the LSDB on r1 and on r3: which LSA types appear, and who generates them
 
 ## Part D — Stub areas and summarisation
 1. Make area 1 a **stub** area, then **totally stubby**. Compare `show ip route` on r3 each time.
-   NVUE: `nv set vrf default router ospf area 1 type stub` (`totally-stub`); FRR: `area 1 stub [no-summary]`.
+   (`area 1 stub` on every router of area 1; for totally stubby add `area 1 stub no-summary` on the ABRs.)
 2. On the ABRs summarise area 1's LANs as one prefix. Which prefix covers 172.16.3.0/24 and
-   172.16.4.0/24 but not 172.16.1.0/24? NVUE: `nv set vrf default router ospf area 1 range <prefix>`;
-   FRR: `area 1 range <prefix>`. Check the result on r2 and on pc1.
+   172.16.4.0/24 but not 172.16.1.0/24? (`area 1 range <prefix>` under `router ospf`.)
+   Check the result on r1, r2 and with `pc1> trace 172.16.4.10`.
 
 ## Deliverables
-Final configs (`nv config show -o yaml` for r1/r2, `show running-config` for r3/r4), LSDB
-excerpts with your explanation, traceroutes for Part B.
+Final configs (`./collect.py all` on netauto), LSDB excerpts with your explanation,
+traceroutes for Part B.
 
 ## Automation corner
 `apply_intent.py` supports OSPF (`ospf.router_id`, `ospf.interfaces.<if>.area|network_type|passive`).
-Write `intent/lab02.yml` for Part A and push it: it uses NVUE for r1/r2 and SSH+FRR for r3/r4
-(the `platform` field in `inventory.yml`).
+Write `intent/lab02.yml` for Part A, check it with `--dry-run` and `--diff`, and push it.
+Then use `./collect.py all -c "vtysh -c 'show ip ospf neighbor json'" --json` to verify every
+adjacency from a script.

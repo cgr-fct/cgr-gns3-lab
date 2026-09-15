@@ -3,8 +3,7 @@
 **Topics:** NET addresses, Level-1 / Level-2 / Level-1-2 routers, areas, the attached bit,
 metrics (wide), comparison with OSPF.
 
-**Devices:** four FRR containers (IS-IS is not part of the Cumulus Linux NVUE model, so this lab
-uses FRR everywhere — which also makes it very light: < 0.5 GB RAM). Same topology as Lab 02.
+**Nodes:** 4 routers, 3 PCs, netauto — same topology as Lab 02. Syntax: [cheat sheet](../CHEATSHEET.md).
 
 ```mermaid
 graph TB
@@ -22,7 +21,7 @@ Addressing: identical to Lab 02 but with `10.3.x.x` for links and `10.255.3.N` l
 Management: r1 .31 … r4 .34.
 
 ```bash
-python tools/cgr_lab.py build labs/lab03-isis --start      # nothing to bootstrap
+python tools/cgr_lab.py build labs/lab03-isis --start
 ```
 
 ### Configuration pattern (vtysh)
@@ -69,4 +68,4 @@ Make r3 and r4 `level-1-2`. What changes for the r3–r4 link? Compare the L1 an
 
 ## Automation corner
 IS-IS is not in the intent model. Add it: an `isis` section in `schema/intent.schema.yml`,
-rendering in `templates/frr.conf.j2`, then push with `./apply_intent.py intent/lab03.yml --lite`.
+rendering in `templates/frr.conf.j2`, then push with `./apply_intent.py intent/lab03.yml`.

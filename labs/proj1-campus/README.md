@@ -1,32 +1,27 @@
 # Project 1 · Part 1 — Enterprise campus network (2025/2026 statement, GNS3 version)
 
-This is the topology of the *ProjectCampusNetwork* simulation used in NVIDIA Air, with the
-**same device names and the same port names**. The statement (tasks, scenarios 1 and 2,
-addressing in 10.8.0.0/16, OSPF, bonds, summarisation, default route) is unchanged — only the
-"Work Setup" part is replaced by this page.
+This is the topology of the *ProjectCampusNetwork* simulation used in NVIDIA Air in 2025/2026,
+with the **same device names and the same port names**. The tasks (scenarios 1 and 2,
+addressing in 10.8.0.0/16, OSPF, bonds, summarisation, default route) are in the project
+statement; this page replaces its "Work Setup" section.
 
 ![Air topology](air-topology.png)
 
 ## Build it
 
 ```bash
-# Apple Silicon Macs, 8 GB laptops, or no nested virtualisation:
-python tools/cgr_lab.py build labs/proj1-campus --lite --start
-
-# x86 with ≥ 24 GB RAM (8 × Cumulus VX = 16 GB in the GNS3 VM):
 python tools/cgr_lab.py build labs/proj1-campus --start
-python tools/cgr_lab.py bootstrap proj1-campus
 ```
 
-The lite version runs 8 FRR containers + 6 Linux host containers + netauto in **< 1 GB of RAM**.
+8 routers/switches + 6 Linux hosts + netauto, in **< 1 GB of RAM**.
 
-| Device | Kind (lite) | Management (eth0) |
+| Device | Kind | Management (eth0) |
 |---|---|---|
-| Access1, Access2 | FRR switch | 192.168.200.13, .11 |
-| Distribution1, Distribution2 | FRR switch/router | 192.168.200.14, .7 |
-| SpineRouter1, SpineRouter2 | FRR router | 192.168.200.5, .3 |
-| BorderRouter | FRR router | 192.168.200.9 |
-| DatacenterRack | FRR switch | 192.168.200.12 |
+| Access1, Access2 | switch | 192.168.200.13, .11 |
+| Distribution1, Distribution2 | router/switch | 192.168.200.14, .7 |
+| SpineRouter1, SpineRouter2 | router | 192.168.200.5, .3 |
+| BorderRouter | router | 192.168.200.9 |
+| DatacenterRack | switch | 192.168.200.12 |
 | UserUbuntu1–4, Ubuntu-Server-5, UbuntuInternet | Linux host (data port **eth1**) | — |
 | netauto | automation station | 192.168.200.254 |
 
@@ -40,9 +35,9 @@ BorderRouter swp1-2 → SpineRouter1 swp3-4, BorderRouter swp3-4 → SpineRouter
 BorderRouter swp5 → UbuntuInternet, DatacenterRack swp5-6 → SpineRouter1 swp5-6,
 DatacenterRack swp10-11 → SpineRouter2 swp11-12, DatacenterRack swp1 → Ubuntu-Server-5.
 
-## How to configure in lite mode
+## How to configure
 
-Same tasks, different syntax — see **[LITE-CHEATSHEET.md](../LITE-CHEATSHEET.md)**:
+See the **[cheat sheet](../CHEATSHEET.md)**:
 
 * VLANs, access ports, trunks, bonds, SVIs → `/etc/network/interfaces` + `ifreload -a`
 * OSPF, default route, summarisation → `vtysh`
@@ -76,18 +71,19 @@ iface bridge
 
 ## What to deliver
 
-As in the statement: the configuration of every device for scenario 1 and scenario 2.
-In lite mode that is, per device, `/etc/network/interfaces` and `/etc/frr/frr.conf`
-(`vtysh -c "show running-config"`). Collect them all from netauto:
+The configuration of every device for scenario 1 and scenario 2: per device,
+`/etc/network/interfaces` and the FRR running configuration. From netauto:
 
 ```bash
-for ip in 13 11 14 7 5 3 9 12; do
-  sshpass -p 'CumulusLab1!' ssh -o StrictHostKeyChecking=no cumulus@192.168.200.$ip \
-    'echo "### $(hostname)"; cat /etc/network/interfaces; sudo vtysh -c "show running-config"'
-done > /root/proj1-scenarioX.txt
+cd /root/cgr
+./collect.py all -o /root/scenario1          # one text file per device
 ```
+
+Then hand in the GNS3 project (**File → Export portable project**): it contains the whole
+topology and every node's saved files, including `/root/scenario1` on netauto. Document the
+host configuration (`ip addr`, `ip route` on the Ubuntu nodes) too.
 
 ## Scenario switching tip
 
 Build each scenario as its own project so you keep both:
-`build labs/proj1-campus --lite --name proj1-scenario1` and `… --name proj1-scenario2`.
+`build labs/proj1-campus --name proj1-scenario1` and `… --name proj1-scenario2`.

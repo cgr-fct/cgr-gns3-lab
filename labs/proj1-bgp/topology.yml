@@ -1,15 +1,15 @@
 # Converted from NVIDIA Air export '24938c56-BGP.json' by tools/air2gns3.py
-# Port names are the same as in Air. Build with --lite to use FRR containers.
+# Port names are the same as in Air. Every router/switch is an FRR container (ports keep the swpN names).
 name: proj1-bgp
 mgmt_subnet: 192.168.200.0/24
 mgmt_switch_pos: [-700, -400]
 nodes:
-  R1: {kind: cumulus, role: router, mgmt: 192.168.200.21, ports: 4, x: -383, y: 241}
-  R2: {kind: cumulus, role: router, mgmt: 192.168.200.22, ports: 5, x: -51, y: 550}
-  R3: {kind: cumulus, role: router, mgmt: 192.168.200.23, ports: 5, x: 383, y: 194}
-  R4: {kind: cumulus, role: router, mgmt: 192.168.200.24, ports: 5, x: -36, y: -25}
-  R5: {kind: cumulus, role: router, mgmt: 192.168.200.25, ports: 4, x: -353, y: -550}
-  R6: {kind: cumulus, role: router, mgmt: 192.168.200.26, ports: 5, x: 383, y: -547}
+  R1: {kind: frr, role: router, mgmt: 192.168.200.21, ports: 4, x: -383, y: 241}
+  R2: {kind: frr, role: router, mgmt: 192.168.200.22, ports: 5, x: -51, y: 550}
+  R3: {kind: frr, role: router, mgmt: 192.168.200.23, ports: 5, x: 383, y: 194}
+  R4: {kind: frr, role: router, mgmt: 192.168.200.24, ports: 5, x: -36, y: -25}
+  R5: {kind: frr, role: router, mgmt: 192.168.200.25, ports: 4, x: -353, y: -550}
+  R6: {kind: frr, role: router, mgmt: 192.168.200.26, ports: 5, x: 383, y: -547}
   netauto: {kind: netauto, mgmt: 192.168.200.254, x: -700, y: -550}
 links:
 - ['R1:swp1', 'R4:swp1']

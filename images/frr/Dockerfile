@@ -1,6 +1,6 @@
-# CGR lightweight router/switch ("cgr-frr")
+# CGR router/switch ("cgr-frr")
 #
-# A tiny Linux node that looks and feels like Cumulus Linux "classic" mode:
+# A tiny Linux network node, modelled on Cumulus Linux "classic" mode:
 #   * front-panel ports are called swp1, swp2, ... (eth0 = management)
 #   * interfaces are configured with ifupdown2 (/etc/network/interfaces, `ifreload -a`)
 #     -> ifupdown2 was written by Cumulus Networks; it is the same tool/syntax
@@ -38,11 +38,11 @@ RUN set -eux; \
     mkdir -p /run/sshd /etc/network/interfaces.d /usr/local/share/cgr; \
     # GNS3 mounts its own (empty) /etc/network: keep a copy of ifupdown2's config
     cp -a /etc/network/ifupdown2 /usr/local/share/cgr/ifupdown2; \
-    # Same login as the Cumulus VX nodes after bootstrap
-    useradd -m -s /bin/bash -G frrvty,frr cumulus; \
-    echo 'cumulus:CumulusLab1!' | chpasswd; \
-    echo 'root:CumulusLab1!' | chpasswd; \
-    echo 'cumulus ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/cumulus; \
+    # Lab login (SSH): cgr / cgr   (the GNS3 console opens a root shell directly)
+    useradd -m -s /bin/bash -G frrvty,frr cgr; \
+    echo 'cgr:cgr' | chpasswd; \
+    echo 'root:cgr' | chpasswd; \
+    echo 'cgr ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/cgr; \
     sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
 COPY daemons vtysh.conf /etc/frr/
@@ -51,7 +51,7 @@ COPY motd /etc/motd
 RUN chmod 755 /usr/local/sbin/cgr-entrypoint && chown -R frr:frr /etc/frr
 
 LABEL org.opencontainers.image.title="cgr-frr" \
-      org.opencontainers.image.description="CGR GNS3 lab node: FRRouting + ifupdown2, Cumulus-style swpN ports"
+      org.opencontainers.image.description="CGR GNS3 lab router/switch: FRRouting + ifupdown2, swpN ports"
 
 # GNS3 keeps these folders per node (they survive stop/start and project export)
 VOLUME ["/etc/frr", "/root"]

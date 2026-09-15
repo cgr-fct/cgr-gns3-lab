@@ -6,7 +6,7 @@ air2gns3.py - convert an NVIDIA Air topology export (JSON) into a CGR topology.y
         --name p1-campus --mgmt-subnet 192.168.200.0/24
 
 Mapping
-  * cumulus-vx-*            -> kind: cumulus   (becomes an FRR container with --lite)
+  * cumulus-vx-*            -> kind: frr  (FRR router/switch container)
                                ports = highest swp used + 1, same swpN names as in Air
   * ubuntu / other Linux    -> kind: host      (small Debian container, data port eth1)
   * Air management_ip       -> mgmt (kept, so addresses match last year's documents)
@@ -28,7 +28,8 @@ def main():
     ap.add_argument("-o", "--output", required=True)
     ap.add_argument("--name", help="project name (default: Air title)")
     ap.add_argument("--mgmt-subnet", default=None,
-                    help="management subnet (default: derived from the Air management IPs)")
+                    help="management subnet (default: derived from the Air management IPs; "
+                         "if the export has none, addresses .1, .2, ... are assigned from this subnet)")
     ap.add_argument("--netauto-ip", default=None, help="address of the netauto station")
     ap.add_argument("--width", type=int, default=1100, help="canvas width to fit the drawing in")
     args = ap.parse_args()
@@ -62,19 +63,26 @@ def main():
         os_name = n.get("os", "")
         d = {}
         if os_name.startswith("cumulus"):
-            d["kind"] = "cumulus"
+            d["kind"] = "frr"
             d["role"] = "switch" if re.search(r"access|distrib|rack|sw", name, re.I) else "router"
             d["ports"] = max(used.get(name, 0) + 1, 4)
         else:
             d["kind"] = "host"
             if re.search(r"server|internet", name, re.I):
                 d["role"] = "server"
-        if n.get("management_ip") and d["kind"] == "cumulus":
+        if n.get("management_ip") and d["kind"] == "frr":
             d["mgmt"] = n["management_ip"]
             mgmt_ips.append(ipaddress.ip_address(n["management_ip"]))
         d["x"] = int((n["positioning"]["x"] - cx) * scale)
         d["y"] = int((n["positioning"]["y"] - cy) * scale)
         nodes[name] = d
+
+    if not mgmt_ips and args.mgmt_subnet:
+        hosts = ipaddress.ip_network(args.mgmt_subnet).hosts()
+        for name, d in nodes.items():
+            if d["kind"] == "frr":
+                d["mgmt"] = str(next(hosts))
+                mgmt_ips.append(ipaddress.ip_address(d["mgmt"]))
 
     topo = {"name": args.name or re.sub(r"\W+", "-", air.get("title", "air-lab")).strip("-").lower()}
     if mgmt_ips:
@@ -92,7 +100,7 @@ def main():
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     header = (f"# Converted from NVIDIA Air export '{Path(args.air_json).name}' by tools/air2gns3.py\n"
-              "# Port names are the same as in Air. Build with --lite to use FRR containers.\n")
+              "# Port names are the same as in Air. Routers/switches are FRR containers.\n")
     body = yaml.safe_dump(topo, sort_keys=False, default_flow_style=None, width=120)
     out.write_text(header + body, encoding="utf-8")
     print(f"{out}: {len(nodes)} nodes, {len(links)} links")

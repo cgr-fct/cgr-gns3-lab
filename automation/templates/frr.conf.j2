@@ -1,4 +1,4 @@
-{# FRRouting configuration for CGR FRR lite nodes #}
+{# FRRouting configuration (/etc/frr/frr.conf) rendered from the intent #}
 frr defaults datacenter
 hostname {{ d.hostname | default(name) }}
 log syslog informational
@@ -17,16 +17,11 @@ interface {{ ifname }}
 exit
 !
 {% endfor %}
-router ospf
- ospf router-id {{ d.ospf.router_id }}
-exit
-!
 {% endif %}
 {% if d.bgp is defined %}
 router bgp {{ d.bgp.asn }}
  bgp router-id {{ d.bgp.router_id }}
- no bgp ebgp-requires-policy
-{% for peer, n in (d.bgp.neighbors | default({})).items() %}
+{% for peer, n in (d.bgp.neighbors | default({})) | dictsort %}
  neighbor {{ peer }} remote-as {{ n.remote_as }}
 {% if n.description is defined %}
  neighbor {{ peer }} description {{ n.description }}
@@ -40,10 +35,16 @@ router bgp {{ d.bgp.asn }}
 {% for net in d.bgp.networks | default([]) %}
   network {{ net }}
 {% endfor %}
-{% for peer, n in (d.bgp.neighbors | default({})).items() if n.next_hop_self | default(false) %}
+{% for peer, n in (d.bgp.neighbors | default({})) | dictsort if n.next_hop_self | default(false) %}
   neighbor {{ peer }} next-hop-self
 {% endfor %}
  exit-address-family
+exit
+!
+{% endif %}
+{% if d.ospf is defined %}
+router ospf
+ ospf router-id {{ d.ospf.router_id }}
 exit
 !
 {% endif %}

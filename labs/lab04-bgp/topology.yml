@@ -1,8 +1,8 @@
 # Lab 04 - BGP: eBGP to two providers, iBGP, policy (local-pref, AS-path prepend, communities)
 name: lab04-bgp
 nodes:
-  e1:      {kind: cumulus, mgmt: 192.168.100.41, x: -180, y: 0}
-  e2:      {kind: cumulus, mgmt: 192.168.100.42, x: 180,  y: 0}
+  e1:      {kind: frr,     mgmt: 192.168.100.41, x: -180, y: 0}
+  e2:      {kind: frr,     mgmt: 192.168.100.42, x: 180,  y: 0}
   isp1:    {kind: frr, mgmt: 192.168.100.43, x: -180, y: -220,
             interfaces: configs/isp1.interfaces, frr_config: configs/isp1.frr.conf}
   isp2:    {kind: frr, mgmt: 192.168.100.44, x: 180,  y: -220,

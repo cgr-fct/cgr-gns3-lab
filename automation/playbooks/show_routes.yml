@@ -1,0 +1,28 @@
+# ansible-playbook playbooks/show_routes.yml            (run from /root/cgr)
+# Collects the routing table of every device and saves it under reports/.
+- name: Routing tables
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Read the routing table
+      ansible.builtin.command: vtysh -c "show ip route json"
+      become: true
+      register: rt
+      changed_when: false
+
+    - name: Count routes per protocol
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} has {{ rt.stdout | from_json | length }} prefixes"
+
+    - name: Make sure the reports folder exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../reports"
+        state: directory
+      delegate_to: localhost
+      run_once: true
+
+    - name: Save it on the netauto station
+      ansible.builtin.copy:
+        content: "{{ rt.stdout | from_json | to_nice_yaml }}"
+        dest: "{{ playbook_dir }}/../reports/{{ inventory_hostname }}-routes.yml"
+      delegate_to: localhost

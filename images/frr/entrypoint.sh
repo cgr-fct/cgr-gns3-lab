@@ -1,5 +1,5 @@
 #!/bin/bash
-# CGR lab node start-up. GNS3 has already created eth0..ethN and run its own
+# CGR router/switch start-up. GNS3 has already created eth0..ethN and run its own
 # (busybox) ifup before we get here.
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 

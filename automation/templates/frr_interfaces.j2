@@ -1,4 +1,4 @@
-{# ifupdown2 (Cumulus "classic") data-plane config for CGR FRR lite nodes #}
+{# ifupdown2 data-plane configuration (/etc/network/interfaces) rendered from the intent #}
 {% set ifs = d.interfaces | default({}) %}
 {% set l2 = [] %}
 {% for ifname, i in ifs.items() if i.mode | default('') in ['access', 'trunk'] %}{% set _ = l2.append(ifname) %}{% endfor %}

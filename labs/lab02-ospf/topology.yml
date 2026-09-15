@@ -1,8 +1,8 @@
 # Lab 02 - OSPFv2: single area, multi-area, costs, stub areas, summarisation
 name: lab02-ospf
 nodes:
-  r1:      {kind: cumulus, mgmt: 192.168.100.31, x: -180, y: -100}
-  r2:      {kind: cumulus, mgmt: 192.168.100.32, x: 180,  y: -100}
+  r1:      {kind: frr,     mgmt: 192.168.100.31, x: -180, y: -100}
+  r2:      {kind: frr,     mgmt: 192.168.100.32, x: 180,  y: -100}
   r3:      {kind: frr,     mgmt: 192.168.100.33, x: -180, y: 120}
   r4:      {kind: frr,     mgmt: 192.168.100.34, x: 180,  y: 120}
   pc1:     {kind: vpcs, ip: 172.16.1.10/24, gw: 172.16.1.1, x: -380, y: -100}

@@ -6,9 +6,8 @@ graph LR
     gui["GNS3 GUI<br/>(+ local controller :3080)"]
     tool["tools/cgr_lab.py"]
     subgraph vm["GNS3 VM (VMware)  ·  or native on Linux"]
-      cvx["Cumulus VX<br/>QEMU/KVM · 2 GB each"]
-      frr["cgr-frr<br/>Docker · ~50 MB each"]
-      na["cgr-netauto<br/>Docker"]
+      frr["cgr-frr routers/switches<br/>Docker · ~40 MB each"]
+      na["cgr-netauto / hosts<br/>Docker · ~20 MB each"]
       vpcs["VPCS PCs · ~2 MB"]
     end
   end
@@ -17,43 +16,29 @@ graph LR
 ```
 
 * **GNS3 GUI** draws the topology and opens consoles. It talks to a small local *controller*.
-* **GNS3 VM** (Windows/macOS) is where the devices actually run. On Linux, devices run
-  directly on your machine — this is the lightest setup of all.
+* **GNS3 VM** (Windows/macOS) is a small Linux VM where the devices actually run as Docker
+  containers. On Linux, they run directly on your machine.
 * **`tools/cgr_lab.py`** builds a lab from `labs/<lab>/topology.yml` through the same REST API
-  the GUI uses, so you never have to drag 10 devices and 15 cables by hand.
+  the GUI uses, so you never have to drag 15 devices and 40 cables by hand.
 
 ## The devices
 
-| Device | What it is | Why | Cost |
-|---|---|---|---|
-| **Cumulus VX** | NVIDIA's free virtual switch (Cumulus Linux 5.x) | Real NOS: NVUE CLI + **NVUE REST API**, FRR routing, bridges, bonds | 2 vCPU, 2 GB RAM, needs KVM (x86) |
-| **cgr-frr** | Debian + FRRouting + ifupdown2 container | Light router/switch; same routing CLI (vtysh) as Cumulus; ports named `swpN` | ~50 MB RAM, any CPU incl. Apple Silicon |
-| **cgr-netauto** | Python, YAML, Jinja2, Ansible, curl | The automation station on the management network | ~30 MB RAM |
-| **VPCS** | GNS3's built-in tiny PC | ping / trace endpoints | ~2 MB |
-
-Every lab has an **out-of-band management network** `192.168.100.0/24` (switch `mgmt-sw`)
-connecting each device's `eth0` and the netauto station (`.10`).
-
-## Full vs lite
-
-| | Full (default) | Lite (`--lite`) |
+| Node | What it is | Configure with |
 |---|---|---|
-| Cumulus nodes | Cumulus VX VMs | replaced by cgr-frr containers |
-| Configuration | NVUE (`nv set …`) | `/etc/network/interfaces` + `vtysh` |
-| Automation | NVUE REST API | SSH + Jinja2 templates |
-| RAM for Lab 01 | ~7 GB | < 0.5 GB |
-| Works on | x86 Windows/Linux/Intel Mac with nested virtualisation | everything, incl. Apple Silicon |
+| **Router / switch** (`cgr-frr`) | Debian + FRRouting + ifupdown2 + Linux bridge/bonding. Ports `swp1…swpN`, management `eth0` | `/etc/network/interfaces` + `ifreload -a`; `vtysh` |
+| **netauto** (`cgr-netauto`) | Python, PyYAML, Jinja2, jsonschema, paramiko, Ansible, curl | the scripts in `/root/cgr` |
+| **Linux host** (same image as netauto) | a "PC/server" with a real Linux shell; data port `eth1` | `ip addr`, `ip route` |
+| **VPCS** | GNS3's built-in tiny PC | `ip 10.0.0.1/24 10.0.0.254` |
 
-## Resources per lab (full mode)
+Why this design:
+* **Same for everyone** — the images are multi-architecture (Intel/AMD and Apple Silicon), so
+  every student runs exactly the same software.
+* **Light** — no virtual machines per device and no nested virtualisation; a 15-node lab needs
+  < 1 GB of RAM, so a GNS3 VM with 2 GB is enough.
+* **Real tools** — FRRouting is the routing suite inside Cumulus Linux, SONiC and many others;
+  ifupdown2 is the interface manager written by Cumulus Networks; Linux bridges and bonds are
+  what those switches use underneath.
 
-| Lab | Cumulus VX | Containers | RAM needed in the GNS3 VM |
-|---|---|---|---|
-| 00 First contact | 2 | 1 | 5 GB |
-| 01 Campus switching | 3 | 1 | 7 GB |
-| 02 OSPF | 2 | 3 | 5 GB |
-| 03 IS-IS | 0 | 5 | 1 GB |
-| 04 BGP | 2 | 3 | 5 GB |
-
-A 16 GB laptop (GNS3 VM with 8–10 GB) runs every lab in full mode. With 8 GB, use `--lite`
-for Lab 01 or set `cumulus.ram: 1536` in `tools/lab_settings.yml`. Only run one lab at a time
-(**stop** the previous project).
+Every lab has an **out-of-band management network** (switch `mgmt-sw`) connecting each
+router/switch `eth0` and the netauto station. Labs 00–04 use `192.168.100.0/24`
+(netauto = `.10`); the Project 1 labs use `192.168.200.0/24` (netauto = `.254`).

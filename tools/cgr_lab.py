@@ -6,11 +6,10 @@ Talks to the GNS3 2.2 controller REST API (the same API the GNS3 GUI uses).
 Keep the GNS3 GUI open while you use it.
 
   python tools/cgr_lab.py check
-  python tools/cgr_lab.py upload-image ~/Downloads/cumulus-linux-5.x-vx-amd64-qemu.qcow2
   python tools/cgr_lab.py templates
-  python tools/cgr_lab.py build labs/lab00-first-contact           [--lite] [--start]
-  python tools/cgr_lab.py bootstrap lab00-first-contact
+  python tools/cgr_lab.py build labs/lab00-first-contact --start
   python tools/cgr_lab.py consoles lab00-first-contact
+  python tools/cgr_lab.py stop lab00-first-contact
   python tools/cgr_lab.py delete lab00-first-contact
 
 Connection settings (first match wins):
@@ -18,7 +17,7 @@ Connection settings (first match wins):
   2. environment variables GNS3_SERVER, GNS3_USER, GNS3_PASSWORD
   3. the GNS3 GUI's own gns3_server.conf (found automatically)
   4. http://127.0.0.1:3080 without authentication
-Lab-wide settings (image names, passwords) live in tools/lab_settings.yml.
+Lab-wide settings (container image names) live in tools/lab_settings.yml.
 
 Only needs Python 3.8+ with the packages in tools/requirements.txt.
 """
@@ -27,9 +26,7 @@ import configparser
 import ipaddress
 import os
 import re
-import socket
 import sys
-import time
 from pathlib import Path
 
 try:
@@ -69,8 +66,9 @@ def load_settings():
     with open(SETTINGS_FILE, encoding="utf-8") as f:
         s = yaml.safe_load(f) or {}
     # allow overrides from the environment
-    if os.environ.get("CGR_CUMULUS_IMAGE"):
-        s["cumulus"]["image"] = os.environ["CGR_CUMULUS_IMAGE"]
+    for key in ("frr_image", "netauto_image"):
+        if os.environ.get("CGR_" + key.upper()):
+            s[key] = os.environ["CGR_" + key.upper()]
     return s
 
 
@@ -134,7 +132,7 @@ class GNS3:
             r = self.s.request(method, url, timeout=kw.pop("timeout", 60), **kw)
         except requests.ConnectionError:
             die(f"Cannot reach the GNS3 server at {self.base}. Is the GNS3 GUI open? "
-                "(see docs/05-build-a-lab.md)")
+                "(see docs/04-build-a-lab.md)")
         if r.status_code == 401:
             die("GNS3 server refused the credentials. Check Edit > Preferences > Server "
                 "(or set GNS3_USER / GNS3_PASSWORD).")
@@ -188,29 +186,6 @@ class GNS3:
 def node_spec(kind, name, data, settings, compute):
     """Return the GNS3 node creation body for one topology node."""
     c = settings
-    if kind == "cumulus":
-        img = c["cumulus"]["image"]
-        return {
-            "name": name, "node_type": "qemu", "compute_id": compute,
-            "symbol": ":/symbols/classic/multilayer_switch.svg" if data.get("role") == "switch"
-            else ":/symbols/classic/router.svg",
-            "port_name_format": "swp{port1}", "first_port_name": "eth0",
-            "properties": {
-                "hda_disk_image": img,
-                "hda_disk_interface": "virtio",
-                "platform": "x86_64",
-                "ram": int(data.get("ram", c["cumulus"].get("ram", 2048))),
-                "cpus": int(data.get("cpus", c["cumulus"].get("cpus", 2))),
-                "adapters": int(data.get("ports", c["cumulus"].get("ports", 8))),
-                "adapter_type": "virtio-net-pci",
-                "console_type": "telnet",
-                "boot_priority": "c",
-                "on_close": "power_off",
-                "linked_clone": True,
-                "options": "-nographic",
-                "usage": "Cumulus VX. Login cumulus / " + c["password"],
-            },
-        }
     if kind == "frr":
         return {
             "name": name, "node_type": "docker", "compute_id": compute,
@@ -220,7 +195,8 @@ def node_spec(kind, name, data, settings, compute):
                 "image": c["frr_image"],
                 "adapters": int(data.get("ports", 8)),
                 "console_type": "telnet",
-                "usage": "CGR FRR node: eth0=mgmt, ethN inside = swpN. vtysh for routing.",
+                "usage": "CGR router/switch: eth0 = management, GNS3 port ethN = swpN inside. "
+                         "Interfaces: /etc/network/interfaces + ifreload -a. Routing: vtysh.",
             },
         }
     if kind == "netauto":
@@ -301,11 +277,6 @@ def mgmt_interfaces_file(ip, prefix):
     )
 
 
-def lite_kind(kind, lite):
-    return "frr" if (lite and kind == "cumulus") else kind
-
-
-# --------------------------------------------------------------------------- commands
 def cmd_check(api, args, settings):
     v = api.get("/version")
     ok(f"GNS3 controller {v.get('version')} at {api.base}")
@@ -326,82 +297,24 @@ def cmd_check(api, args, settings):
     else:
         warn("Docker is not available on this compute (FRR / netauto nodes need it). "
              "Use the GNS3 VM, or install Docker on Linux.")
-    if "qemu" in node_types:
-        try:
-            imgs = api.get(f"/computes/{cid}/qemu/images")
-            names = [i["filename"] for i in imgs
-                     if not re.match(r"(empty\d+[GT]|OVMF_|config\.img)", i["filename"])]
-            if settings["cumulus"]["image"] in names:
-                ok(f"Cumulus image {settings['cumulus']['image']} is present")
-            else:
-                warn(f"Cumulus image '{settings['cumulus']['image']}' not found on '{cid}'. "
-                     f"Found: {', '.join(names) or 'none'}. Run upload-image, or use --lite.")
-        except RuntimeError as e:
-            warn(f"Could not list QEMU images: {e}")
-        try:
-            kvm = api.get(f"/computes/{cid}/qemu/capabilities")
-            if kvm.get("kvm"):
-                ok(f"KVM acceleration available for {', '.join(kvm['kvm'])}")
-            else:
-                warn("No KVM acceleration: Cumulus VX will NOT run. Enable nested "
-                     "virtualization (docs/07-troubleshooting.md) or use --lite.")
-        except RuntimeError:
-            pass
-
-
-def cmd_upload(api, args, settings):
-    path = Path(args.file).expanduser()
-    if not path.exists():
-        die(f"{path} not found")
-    cid = api.compute_id(args.compute)
-    size = path.stat().st_size
-    info(f"Uploading {path.name} ({size/2**30:.2f} GB) to compute '{cid}' - this can take a few minutes")
-
-    class Progress:
-        def __init__(self, f):
-            self.f, self.done, self.last = f, 0, 0
-
-        def __iter__(self):
-            while True:
-                chunk = self.f.read(4 * 2**20)
-                if not chunk:
-                    break
-                self.done += len(chunk)
-                pct = int(self.done * 100 / size)
-                if pct != self.last:
-                    self.last = pct
-                    print(f"\r     {pct:3d}%", end="", flush=True)
-                yield chunk
-
-    with open(path, "rb") as f:
-        api.post(f"/computes/{cid}/qemu/images/{path.name}", data=Progress(f), timeout=3600)
-    print()
-    ok("Upload finished")
-    if path.name != settings["cumulus"]["image"]:
-        warn(f"tools/lab_settings.yml expects '{settings['cumulus']['image']}'. "
-             f"Edit cumulus.image there (or set CGR_CUMULUS_IMAGE={path.name}).")
 
 
 def cmd_templates(api, args, settings):
     """Create GUI templates so students can also drag devices by hand."""
     cid = api.compute_id(args.compute)
     wanted = {
-        "CGR Cumulus VX": ("cumulus", "switch"),
-        "CGR FRR": ("frr", "router"),
+        "CGR Router": ("frr", "router"),
+        "CGR Switch": ("frr", "switch"),
         "CGR NetAuto": ("netauto", "guest"),
     }
     for tname, (kind, category) in wanted.items():
-        spec = node_spec(kind, tname, {"role": "switch"} if kind == "cumulus" else {},
-                         settings, cid)
+        spec = node_spec(kind, tname, {"role": category}, settings, cid)
         body = {"name": tname, "compute_id": cid, "category": category,
                 "symbol": spec.get("symbol"), "default_name_format": "{name}-{0}",
                 "template_type": spec["node_type"]}
         body.update(spec["properties"])
-        if kind == "cumulus":
-            body.update({"port_name_format": "swp{port1}", "first_port_name": "eth0",
-                         "default_name_format": "sw{0}"})
-        elif kind == "frr":
-            body["default_name_format"] = "r{0}"
+        if kind == "frr":
+            body["default_name_format"] = "sw{0}" if category == "switch" else "r{0}"
         else:
             body["default_name_format"] = "netauto{0}"
         existing = api.template_by_name(tname)
@@ -418,29 +331,17 @@ def cmd_templates(api, args, settings):
 
 def cmd_build(api, args, settings):
     topo = load_topology(args.lab)
-    name = args.name or topo["name"] + ("-lite" if args.lite else "")
+    name = args.name or topo["name"]
     cid = api.compute_id(args.compute)
-    nodes_def = topo["nodes"]
+    for n, d in topo["nodes"].items():
+        if d.get("kind") not in ("frr", "host", "netauto", "vpcs", "switch", "nat"):
+            die(f"Node {n}: unknown kind '{d.get('kind')}'")
     mgmt = ipaddress.ip_network(topo.get("mgmt_subnet", settings["mgmt_subnet"]))
 
     if api.project_by_name(name):
         if not args.force:
             die(f"Project '{name}' already exists. Use --force to replace it, or --name.")
         cmd_delete(api, argparse.Namespace(project=name), settings, quiet=True)
-
-    if args.lite:
-        info("Lite mode: every Cumulus VX node becomes a CGR FRR container "
-             "(NVUE REST API not available on those nodes)")
-    else:
-        # sanity check before creating anything
-        if any(d["kind"] == "cumulus" for d in nodes_def.values()):
-            try:
-                imgs = [i["filename"] for i in api.get(f"/computes/{cid}/qemu/images")]
-                if settings["cumulus"]["image"] not in imgs:
-                    die(f"Cumulus image '{settings['cumulus']['image']}' is not on compute '{cid}'. "
-                        "Run upload-image first, fix tools/lab_settings.yml, or use --lite.")
-            except RuntimeError as e:
-                warn(f"Could not verify the Cumulus image: {e}")
 
     info(f"Creating project '{name}' on compute '{cid}'")
     proj = api.post("/projects", json={"name": name, "auto_close": True,
@@ -473,7 +374,7 @@ def _populate(api, args, settings, topo, name, pid, cid, mgmt):
         ok(f"{MGMT_SWITCH} (management network {mgmt})")
 
     for nname, d in nodes_def.items():
-        kind = lite_kind(d["kind"], args.lite)
+        kind = d["kind"]
         spec = node_spec(kind, nname, d, settings, cid)
         spec.update({"x": int(d.get("x", 0)), "y": int(d.get("y", 0))})
         try:
@@ -499,6 +400,16 @@ def _populate(api, args, settings, topo, name, pid, cid, mgmt):
         elif kind == "netauto":
             content = mgmt_interfaces_file(d["mgmt"], mgmt.prefixlen)
             api.post(f"/projects/{pid}/nodes/{nid}/files/etc/network/interfaces", data=content)
+            # inventory of this lab for the automation scripts (/root/lab/inventory.yml)
+            inv = {"all": {
+                "vars": {"ansible_user": settings.get("user", "cgr"),
+                         "ansible_password": settings.get("password", "cgr"),
+                         "ansible_python_interpreter": "/usr/bin/python3"},
+                "hosts": {n: {"ansible_host": dd["mgmt"]} for n, dd in nodes_def.items()
+                          if dd["kind"] == "frr" and dd.get("mgmt")}}}
+            api.post(f"/projects/{pid}/nodes/{nid}/files/root/lab/inventory.yml",
+                     data=f"# Ansible/CGR inventory generated by cgr_lab.py for lab {name}\n"
+                          + yaml.safe_dump(inv, sort_keys=False))
         elif kind == "host":
             content = "auto lo\niface lo inet loopback\n"
             if d.get("ip"):
@@ -547,21 +458,19 @@ def _populate(api, args, settings, topo, name, pid, cid, mgmt):
     ok(f"Project '{name}' ready. In the GNS3 GUI: File > Open project > {name}")
     if args.start:
         cmd_start(api, argparse.Namespace(project=name), settings)
-    print_next_steps(name, topo, args.lite)
+    print_next_steps(name, topo)
 
 
-def print_next_steps(name, topo, lite):
-    has_cumulus = any(d["kind"] == "cumulus" for d in topo["nodes"].values())
+def print_next_steps(name, topo):
+    rel = topo["_dir"]
+    try:
+        rel = rel.relative_to(REPO)
+    except ValueError:
+        pass
     print("\nNext steps:")
-    if not lite and has_cumulus:
-        print(f"  1. Start all nodes (GUI play button, or: cgr_lab.py start {name})")
-        print("  2. Wait ~2-4 min for Cumulus VX to boot, then run:")
-        print(f"       python tools/cgr_lab.py bootstrap {name}")
-        print("     (or paste labs/<lab>/bootstrap/<device>.txt into each console)")
-    else:
-        print(f"  1. Start all nodes (GUI play button, or: cgr_lab.py start {name})")
-        print("  2. Nodes come up already addressed on the management network")
-    print(f"  3. Follow the lab guide: {topo['_dir'].relative_to(REPO) if str(topo['_dir']).startswith(str(REPO)) else topo['_dir']}/README.md")
+    print(f"  1. Start all nodes (GUI play button, or: cgr_lab.py start {name})")
+    print("  2. Double-click a node in GNS3 to open its console")
+    print(f"  3. Follow the lab guide: {rel}/README.md")
 
 
 def cmd_start(api, args, settings):
@@ -612,166 +521,6 @@ def cmd_consoles(api, args, settings):
             print(f"  {n['name']:<12} {n['status']:<8} telnet {console_host_for(n, args.server_url)} {n['console']}")
 
 
-# ---- console bootstrap (Cumulus VX first login + base config) ----------------
-class Console:
-    def __init__(self, host, port, log_prefix):
-        self.sock = socket.create_connection((host, port), timeout=10)
-        self.sock.settimeout(1)
-        self.buf = ""
-        self.p = log_prefix
-
-    def send(self, text):
-        self.sock.sendall(text.encode())
-
-    def _read(self):
-        try:
-            data = self.sock.recv(4096)
-        except socket.timeout:
-            return ""
-        if not data:
-            raise ConnectionError("console closed")
-        # strip telnet negotiation (IAC sequences)
-        out, i = bytearray(), 0
-        while i < len(data):
-            if data[i] == 255 and i + 1 < len(data):
-                cmd = data[i + 1]
-                if cmd in (251, 252, 253, 254) and i + 2 < len(data):
-                    opt = data[i + 2]
-                    if cmd == 251:    # WILL x -> DO for echo/suppress-go-ahead, else DONT
-                        reply = 253 if opt in (1, 3) else 254
-                    elif cmd == 253:  # DO x -> WILL suppress-go-ahead, else WONT
-                        reply = 251 if opt == 3 else 252
-                    else:
-                        reply = None
-                    if reply is not None:
-                        try:
-                            self.sock.sendall(bytes([255, reply, opt]))
-                        except OSError:
-                            pass
-                    i += 3
-                    continue
-                i += 2
-                continue
-            out.append(data[i])
-            i += 1
-        return out.decode(errors="ignore")
-
-    def expect(self, patterns, timeout):
-        end = time.time() + timeout
-        while time.time() < end:
-            chunk = self._read()
-            if chunk:
-                self.buf += chunk
-                self.buf = self.buf[-4000:]
-            for idx, pat in enumerate(patterns):
-                m = re.search(pat, self.buf)
-                if m:
-                    self.buf = self.buf[m.end():]
-                    return idx
-        return -1
-
-
-PROMPT = r"[\w.-]+@[\w.-]+:[^\n]*[$#] ?$"
-
-
-def bootstrap_cumulus(host, port, name, lines, settings):
-    lab_pw = settings["password"]
-    tries_pw = [settings["cumulus"].get("default_password", "cumulus"), lab_pw]
-    con = Console(host, port, name)
-    info(f"{name}: connected to console {host}:{port}, waiting for login prompt")
-    con.send("\r")
-    deadline = time.time() + 900
-    pw_idx = 0
-    logged_in = False
-    while time.time() < deadline and not logged_in:
-        idx = con.expect([r"login: ?$", r"Password: ?$", r"[Cc]urrent password: ?$",
-                          r"(New|new) password: ?$", r"Retype new password: ?$",
-                          r"Login incorrect", PROMPT], timeout=30)
-        if idx == -1:
-            con.send("\r")
-        elif idx == 0:
-            con.send(settings["cumulus"].get("user", "cumulus") + "\r")
-        elif idx == 1:
-            con.send(tries_pw[min(pw_idx, 1)] + "\r")
-        elif idx == 2:
-            con.send(tries_pw[0] + "\r")
-        elif idx in (3, 4):
-            con.send(lab_pw + "\r")
-        elif idx == 5:
-            pw_idx += 1
-            if pw_idx > 1:
-                die(f"{name}: cannot log in with 'cumulus' or the lab password")
-        elif idx == 6:
-            logged_in = True
-    if not logged_in:
-        die(f"{name}: timed out waiting for the console (is the node started?)")
-    ok(f"{name}: logged in")
-    for line in lines:
-        con.send(line + "\r")
-        wait = 240 if "apply" in line or "save" in line else 30
-        if con.expect([PROMPT], timeout=wait) == -1:
-            warn(f"{name}: no prompt after '{line}' (continuing)")
-    ok(f"{name}: bootstrap done")
-
-
-def cmd_bootstrap(api, args, settings):
-    p, nodes = project_nodes(api, args.project)
-    lab = args.lab
-    if not lab:
-        base = re.sub(r"-lite$", "", args.project)
-        cand = REPO / "labs" / base
-        lab = cand if cand.exists() else None
-    if not lab:
-        die("Cannot find the lab folder; pass --lab labs/<lab>")
-    topo = load_topology(lab)
-    mgmt = ipaddress.ip_network(topo.get("mgmt_subnet", settings["mgmt_subnet"]))
-    todo = []
-    for n in nodes:
-        d = topo["nodes"].get(n["name"])
-        if not d or d["kind"] != "cumulus" or n["node_type"] != "qemu":
-            continue
-        if args.only and n["name"] not in args.only:
-            continue
-        if n["status"] != "started":
-            warn(f"{n['name']} is not started - skipping")
-            continue
-        bfile = topo["_dir"] / "bootstrap" / f"{n['name']}.txt"
-        if bfile.exists():
-            lines = [l.strip() for l in bfile.read_text(encoding="utf-8").splitlines()
-                     if l.strip() and not l.strip().startswith("#")]
-        else:
-            lines = [f"nv set system hostname {n['name']}",
-                     "nv unset interface eth0 ip address dhcp",
-                     f"nv set interface eth0 ip address {d['mgmt']}/{mgmt.prefixlen}",
-                     f"nv set system api listening-address {d['mgmt']}",
-                     "nv config apply -y", "nv config save"]
-        todo.append((n, lines))
-    if not todo:
-        warn("Nothing to bootstrap (no started Cumulus VX nodes)")
-        return
-    import threading
-    threads, errors = [], []
-
-    def run(n, lines):
-        try:
-            bootstrap_cumulus(console_host_for(n, args.server_url), n["console"], n["name"], lines, settings)
-        except SystemExit:
-            errors.append(n["name"])
-        except Exception as e:  # noqa
-            warn(f"{n['name']}: {e}")
-            errors.append(n["name"])
-
-    for n, lines in todo:
-        t = threading.Thread(target=run, args=(n, lines))
-        t.start()
-        threads.append(t)
-    for t in threads:
-        t.join()
-    if errors:
-        die(f"Bootstrap failed on: {', '.join(errors)} - paste the bootstrap file by hand")
-    ok("All Cumulus VX nodes bootstrapped. Log in with cumulus / " + settings["password"])
-
-
 # --------------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description="Build and manage CGR GNS3 labs")
@@ -781,31 +530,24 @@ def main():
     ap.add_argument("--compute", help="compute id to use (default: 'vm' if present, else 'local')")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("check", help="test the connection and the prerequisites")
-    s = sub.add_parser("upload-image", help="upload the Cumulus VX qcow2 to the GNS3 VM/server")
-    s.add_argument("file")
     sub.add_parser("templates", help="create the CGR device templates in the GNS3 GUI")
     s = sub.add_parser("build", help="create a GNS3 project from labs/<lab>/topology.yml")
     s.add_argument("lab")
-    s.add_argument("--lite", action="store_true", help="replace Cumulus VX by FRR containers")
     s.add_argument("--name", help="project name (default: lab name)")
     s.add_argument("--force", action="store_true", help="replace an existing project")
     s.add_argument("--start", action="store_true", help="start all nodes afterwards")
     for c in ("start", "stop", "delete", "consoles"):
         s = sub.add_parser(c, help=f"{c} a lab project")
         s.add_argument("project")
-    s = sub.add_parser("bootstrap", help="log in to every Cumulus VX console and apply the base config")
-    s.add_argument("project")
-    s.add_argument("--lab", help="lab folder (default: labs/<project>)")
-    s.add_argument("--only", nargs="*", help="only these nodes")
     args = ap.parse_args()
 
     settings = load_settings()
     server, user, password = connection_settings(args)
     args.server_url = server
     api = GNS3(server, user, password)
-    handlers = {"check": cmd_check, "upload-image": cmd_upload, "templates": cmd_templates,
+    handlers = {"check": cmd_check, "templates": cmd_templates,
                 "build": cmd_build, "start": cmd_start, "stop": cmd_stop, "delete": cmd_delete,
-                "consoles": cmd_consoles, "bootstrap": cmd_bootstrap}
+                "consoles": cmd_consoles}
     try:
         handlers[args.cmd](api, args, settings)
     except RuntimeError as e:
