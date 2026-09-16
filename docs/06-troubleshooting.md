@@ -4,6 +4,24 @@
 GNS3 must be open. Check *Edit → Preferences → Server* and pass
 `--server http://127.0.0.1:3080 --user <user> --password <password>`.
 
+### VirtualBox: the GNS3 VM does not start
+* *"must have a network adapter attached to a host-only …"*: in VirtualBox *Tools → Network
+  Manager* create a host-only network (Windows: with *DHCP Server* enabled) and attach **Adapter 1**
+  of the GNS3 VM to it; **Adapter 2** must be NAT.
+* An error about **nested virtualisation / VT-x / AMD-V** (Windows): GNS3 turns nested
+  virtualisation on at every start and VirtualBox may refuse it while Hyper-V is active. Either
+  turn Hyper-V off (*Windows Features*: untick *Hyper-V*, *Virtual Machine Platform* and
+  *Windows Hypervisor Platform*, reboot — this disables WSL2/Docker Desktop), or use VMware.
+* **macOS with VirtualBox:** GNS3 does not start the VM for you — start it in VirtualBox first,
+  then GNS3 (install guide, option B). If the remote server stays red, check the address shown on
+  the VM console and fix it in *Preferences → Server → Remote servers*; `curl http://<address>/v2/version`
+  in Terminal must answer.
+
+### `cgr_lab.py check` uses the wrong compute / says Docker is not available
+It prefers the GNS3 VM, then any other connected server with Docker (e.g. the VirtualBox VM added
+as a remote server), then the local server. `check` lists them all; pick one explicitly with
+`--compute <id>` if needed. A red (not connected) server is ignored: start its VM first.
+
 ### I can't find the VMware download / Broadcom says my account is pending
 VMware Workstation Pro and Fusion are free but only downloadable from the Broadcom support portal
 after the (free) account passes an export-compliance check, which can take days. Use the exact

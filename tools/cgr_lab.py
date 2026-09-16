@@ -162,11 +162,22 @@ class GNS3:
     def compute_id(self, prefer=None):
         comps = self.get("/computes")
         ids = {c["compute_id"]: c for c in comps if c.get("connected", True)}
-        for cid in ([prefer] if prefer else []) + ["vm", "local"]:
+        if prefer:
+            if prefer in ids:
+                return prefer
+            die(f"Compute '{prefer}' is not connected. Connected: {', '.join(ids) or 'none'}")
+
+        def docker(cid):
+            return "docker" in ((ids[cid].get("capabilities") or {}).get("node_types") or [])
+        # the GNS3 VM, then any other compute that runs Docker (e.g. a VM added as a remote
+        # server), then the local server (Linux with Docker)
+        order = ["vm"] + sorted(c for c in ids if c not in ("vm", "local")) + ["local"]
+        for cid in order:
+            if cid in ids and docker(cid):
+                return cid
+        for cid in order:
             if cid in ids:
                 return cid
-        if ids:
-            return next(iter(ids))
         die("The GNS3 server has no connected compute. Is the GNS3 VM running?")
 
     def project_by_name(self, name):
@@ -532,7 +543,7 @@ def main():
     ap.add_argument("--server", help="GNS3 controller URL, e.g. http://127.0.0.1:3080")
     ap.add_argument("--user")
     ap.add_argument("--password")
-    ap.add_argument("--compute", help="compute id to use (default: 'vm' if present, else 'local')")
+    ap.add_argument("--compute", help="compute id to use (default: the GNS3 VM, else another compute with Docker, else local)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("check", help="test the connection and the prerequisites")
     sub.add_parser("templates", help="create the CGR device templates in the GNS3 GUI")

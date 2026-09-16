@@ -28,6 +28,7 @@ console (a root shell — no login).
 | `build <lab> --name myname` | Builds another copy under a different name (e.g. one per scenario) |
 | `delete <project>` | Deletes the project |
 | `--server http://IP:3080 --user U --password P` | Connect to another GNS3 server |
+| `--compute ID` | Use this compute (default: the GNS3 VM, else a remote server with Docker, else local) |
 
 If `cgr_lab.py` can't log in: GNS3 → **Edit → Preferences → Server** shows the host, port,
 user and password of the local server. Pass them with `--server/--user/--password` or set

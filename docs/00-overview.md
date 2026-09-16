@@ -5,7 +5,7 @@ graph LR
   subgraph laptop["Your computer"]
     gui["GNS3 GUI<br/>(+ local controller :3080)"]
     tool["tools/cgr_lab.py"]
-    subgraph vm["GNS3 VM (VMware)  ·  or native on Linux"]
+    subgraph vm["GNS3 VM (VMware or VirtualBox)  ·  or native on Linux"]
       frr["cgr-frr routers/switches<br/>Docker · ~40 MB each"]
       na["cgr-netauto / hosts<br/>Docker · ~20 MB each"]
       vpcs["VPCS PCs · ~2 MB"]
