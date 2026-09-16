@@ -2,7 +2,7 @@
 
 **Goal:** prove that your installation works end to end: the lab builds and starts, the
 management network works, a VLAN carries traffic between two PCs, and you can configure a
-switch from the automation station — with a YAML file over SSH and with RESTCONF. Do this lab **before the first class**.
+switch from the automation station — with a YAML file over SSH and with RESTCONF. Do this lab in the first class**.
 
 ```mermaid
 graph LR
