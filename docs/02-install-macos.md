@@ -7,8 +7,24 @@ Time: ~30 min. Needs ~10 GB free disk and 8 GB RAM.
 
 ## 1. VMware Fusion Pro (free)
 
-Download it from the Broadcom support portal (free account): <https://support.broadcom.com> →
-*My Downloads* → *VMware Fusion*. Install it and open it once to grant the permissions macOS asks for.
+VMware Fusion is **not discontinued** — it is free for personal, educational and commercial use
+(current release: **25H2 / 26H1**, Apple Silicon and Intel). It is only distributed through the
+Broadcom support portal, and the product pages on vmware.com don't have a download button:
+
+1. **Register now** at <https://support.broadcom.com> (*Register*, a free *Basic* account). Fill in
+   the profile with your real name, address and country: Broadcom checks it (export compliance)
+   before the first download, and that can take from minutes to **several days** — don't leave it
+   for the day of the first lab class.
+2. Log in → *My Downloads* → click the link **Free Software Downloads available HERE** → search
+   **VMware Fusion** → open the latest release.
+   (Direct link after logging in:
+   <https://support.broadcom.com/group/ecx/productdownloads?subfamily=VMware%20Fusion&freeDownloads=true>.)
+3. Tick *I agree to the Terms and Conditions* and download the `.dmg`.
+4. Install it; when asked for a licence key, choose the free option (no key needed). Open Fusion once
+   and grant the permissions macOS asks for (*System Settings → Privacy & Security*).
+
+If the download is still blocked by the account check when the classes start, tell the lab
+instructor.
 
 ## 2. GNS3 and the GNS3 VM
 

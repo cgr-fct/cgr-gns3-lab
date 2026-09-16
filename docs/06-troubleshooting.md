@@ -4,6 +4,12 @@
 GNS3 must be open. Check *Edit → Preferences → Server* and pass
 `--server http://127.0.0.1:3080 --user <user> --password <password>`.
 
+### I can't find the VMware download / Broadcom says my account is pending
+VMware Workstation Pro and Fusion are free but only downloadable from the Broadcom support portal
+after the (free) account passes an export-compliance check, which can take days. Use the exact
+steps in the install guide (*My Downloads* → *Free Software Downloads available HERE*). On Windows
+you can start with VirtualBox meanwhile (see the Windows guide).
+
 ### GNS3 VM stays red / "GNS3 VM is not running"
 Open VMware and look at the VM console for errors. In GNS3: *Edit → Preferences → GNS3 VM* →
 check the VM name and engine (VMware). GUI and VM must be **the same version** (2.2.54) — the VM

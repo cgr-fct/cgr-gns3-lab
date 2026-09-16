@@ -7,9 +7,24 @@ Time: ~30 min, mostly downloads. Needs ~10 GB free disk and 8 GB RAM (16 GB is c
 
 ## 1. VMware Workstation Pro (free)
 
-Free for personal, educational and commercial use. Download it from the Broadcom support
-portal (free account): <https://support.broadcom.com> → *My Downloads* → *VMware Workstation Pro*
-→ Windows. Install with the defaults.
+Free for personal, educational and commercial use (current release: **25H2 / 26H1**; any recent
+version works). It is only distributed through the Broadcom support portal:
+
+1. **Register now** at <https://support.broadcom.com> (*Register*, a free *Basic* account). Fill in
+   the profile with your real name, address and country: Broadcom checks it (export compliance)
+   before the first download, and that can take from minutes to **several days** — don't leave it
+   for the day of the first lab class.
+2. Log in → *My Downloads* → click the link **Free Software Downloads available HERE** → search
+   **VMware Workstation Pro** → open the latest release → Windows.
+   (Direct link after logging in:
+   <https://support.broadcom.com/group/ecx/productdownloads?subfamily=VMware%20Workstation%20Pro&freeDownloads=true>.)
+3. Tick *I agree to the Terms and Conditions* and download. Install with the defaults; when the
+   installer asks for a licence key, leave it empty and choose the free option.
+
+If your account is still waiting for approval, you can start with **VirtualBox** instead
+(<https://www.virtualbox.org>, and `GNS3.VM.VirtualBox.2.2.54.zip` below; in the Setup Wizard choose
+*VirtualBox* instead of *VMware*). This should work the same way but was not tested by us; VMware is recommended because it is
+faster and more stable with GNS3.
 
 You do **not** need to change any Windows virtualisation settings: the labs use containers,
 so VMware works fine next to Hyper-V, WSL2 or Docker Desktop.
