@@ -92,15 +92,20 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
 
 **Create the GNS3 VM — Apple Silicon:**
 
-3. *Machine → New…*
-   * Name: **GNS3 VM**; ISO image: leave empty.
-   * OS: **Linux**, distribution **Ubuntu**, version **Ubuntu (64-bit ARM)**.
-   * Hardware: **2048 MB** (4096 MB if you have 16 GB), **2 CPUs**.
-   * Hard disk: **Use an Existing Virtual Hard Disk File** → folder icon → *Add* →
-     `gns3vm-disk1.vmdk` → Choose → Finish. Don't start it yet.
-4. Select the VM → *Settings*:
-   * **Storage**: on the controller that holds `gns3vm-disk1.vmdk`, click the *add hard disk* icon →
-     *Add* → `gns3vm-disk2.vmdk` → Choose. (disk1 must stay first.)
+3. *New* (toolbar) — the wizard has a few collapsible sections:
+   * *Virtual machine name and operating system*: Name **GNS3 VM**; ISO image: leave empty;
+     OS **Linux**, distribution **Ubuntu**, version **Ubuntu (64-bit ARM)**.
+   * *Specify virtual hardware*: **Base Memory 2048 MB** (4096 MB if you have 16 GB),
+     **2 CPUs**. Leave *Use EFI* as it is.
+   * *Specify virtual hard disk*: select **Use an Existing Virtual Hard Disk File** → click the
+     folder icon on its right → **Add** → `gns3vm-disk1.vmdk` → **Choose**.
+     (Not *Create a New Virtual Hard Disk*, which is selected by default.)
+   * **Finish**. Don't start the VM yet.
+4. Select the VM → *Settings* → **Storage**: select the storage **controller** (the line above
+   `gns3vm-disk1.vmdk`), click the *Adds hard disk* icon → **Add** → `gns3vm-disk2.vmdk` →
+   **Choose**. `gns3vm-disk1.vmdk` must stay the first disk. Leave any empty optical drive as it is.
+
+   Then, still in *Settings*:
    * **Network → Adapter 1**: *Attached to* **Host-only Network**, name *HostNetwork* (the one
      created in step 2; if the name list is empty, step 2 was not done).
    * **Network → Adapter 2**: tick *Enable*, *Attached to* **NAT** (Internet access for the VM).
