@@ -115,7 +115,10 @@ redistributed routes).
 - [x] **VirtualBox on Apple Silicon does not work** (checked on a Mac with VirtualBox 7.2: GRUB
       starts, the Ubuntu 20.04 GNS3 VM never comes up — no console, no DHCP lease). Removed from
       the guide.
-- [ ] **UTM on Apple Silicon** (macOS option B): VM from the two ARM64 disks (VirtIO), one
+- [x] **UTM on Apple Silicon — Lab 00 works end to end** (checked on a Mac; the university VPN must be
+      off, otherwise the VM has no Internet access and the image pull fails).
+- [ ] **UTM on Apple Silicon** — still to check: Lab 01 (bonds, VRRP; `sudo modprobe -a bonding 8021q dummy macvlan`
+      in the VM) and a large lab's memory use. Background of the UTM setup (macOS option B): VM from the two ARM64 disks (VirtIO), one
       *Shared Network* NIC, serial console, added to GNS3 as a *remote server*. Checked here on
       the equivalent QEMU machine (virt, EFI, virtio-blk, virtio-net, one NIC): boots in ~4 min
       under emulation, eth0 gets DHCP, server answers on :80 without auth, a 2.2.54 controller
