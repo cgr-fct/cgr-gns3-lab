@@ -87,18 +87,18 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
 
 **Create the GNS3 VM:**
 
-2. UTM → **Create a New Virtual Machine** → **Virtualize** → **Linux**.
-   * *Hardware*: **Memory 2048 MB** (4096 MB if you have 16 GB), **2 CPU cores**.
+2. UTM → **Create a New Virtual Machine** → **Virtualize** → **Linux**:
    * Leave **Use Apple Virtualization** unticked (UTM then uses QEMU, which is what we tested).
-   * *Boot image*: nothing to select — just **Continue** (tick *Skip ISO boot* if it is shown).
-   * *Storage*: accept the proposed size (the empty disk is removed in step 3) → Continue.
-   * *Shared Directory*: skip → Continue.
+   * *Boot Image Type*: **Import existing drive** → *Import Disk Image* → **Browse…** →
+     `gns3vm-disk1.vmdk` → **Continue**.
+   * *Hardware*: **Memory 2048 MB** (4096 MB if you have 16 GB), **2 CPU cores** → Continue.
+   * If a *Storage* or *Shared Directory* page appears, keep the defaults / skip → Continue.
    * *Summary*: Name **GNS3 VM**, tick **Open VM Settings** → **Save**.
 3. In the settings window:
-   * **Drives**: select the empty disk that was created → **Delete**. Then **New…** → **Import…** →
-     `gns3vm-disk1.vmdk`, interface **VirtIO**. Repeat for `gns3vm-disk2.vmdk` (VirtIO).
-     UTM converts them to its own format; `gns3vm-disk1` must be the **first** drive in the list
-     (drag it up if needed). If a CD/DVD drive is listed, you can delete it.
+   * **Drives**: `gns3vm-disk1` is already there (UTM converts it to its own format). Add the second
+     disk: **New…** → **Import…** → `gns3vm-disk2.vmdk`, interface **VirtIO** (the same interface as
+     the first drive). `gns3vm-disk1` must stay the **first** drive in the list. If a CD/DVD drive
+     is listed, you can delete it.
    * **Network**: *Network Mode* **Shared Network**, card **virtio-net-pci** (the defaults).
      One network card is enough: in this mode the Mac can reach the VM and the VM has Internet.
    * **Devices → New… → Serial**: mode **Built-in Terminal**. The GNS3 VM shows its console there
