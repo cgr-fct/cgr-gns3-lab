@@ -19,7 +19,7 @@ python tools/cgr_lab.py build labs/lab01-campus --start
 | Step | Windows | macOS (Intel or Apple Silicon) | Linux |
 |---|---|---|---|
 | 1. Install GNS3 **2.2.54** (+ GNS3 VM) | [guide](docs/01-install-windows.md) | [guide](docs/02-install-macos.md) | [guide](docs/03-install-linux.md) |
-| 2. Get this repo | `git clone <REPO-URL>` or *Code → Download ZIP* | same | same |
+| 2. Get this repo | `git clone https://github.com/cgr-fct/cgr-gns3-lab.git` or *Code → Download ZIP* | same | same |
 | 3. Python tools | `py -m pip install -r tools\requirements.txt` | venv + `pip install -r tools/requirements.txt` | same as macOS |
 | 4. Check | `py tools\cgr_lab.py check` | `python tools/cgr_lab.py check` | same |
 | 5. First lab | [Lab 00](labs/lab00-first-contact/README.md) | same | same |

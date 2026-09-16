@@ -9,7 +9,7 @@
    `automation/` (YANG model, templates, RESTCONF server and client).
 3. Make both packages **public** (*Packages → package → Package settings → Change visibility*).
 4. In `tools/lab_settings.yml` replace `CHANGE-ME` with the lower-case owner name. Replace
-   `<REPO-URL>` in `docs/` and `README.md`. Commit.
+   `https://github.com/cgr-fct/cgr-gns3-lab.git` in `docs/` and `README.md`. Commit.
 5. Rebuilds run automatically whenever `images/` or `automation/` change.
 
 Local build alternative (no GitHub):

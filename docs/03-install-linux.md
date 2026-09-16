@@ -27,7 +27,7 @@ echo -e "bonding\n8021q\ndummy\nmacvlan" | sudo tee /etc/modules-load.d/cgr.conf
 
 ```bash
 cd ~
-git clone <REPO-URL> cgr-gns3-lab && cd cgr-gns3-lab
+git clone https://github.com/cgr-fct/cgr-gns3-lab.git cgr-gns3-lab && cd cgr-gns3-lab
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r tools/requirements.txt
 python tools/cgr_lab.py check          # compute 'local', Docker OK

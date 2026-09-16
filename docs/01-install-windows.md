@@ -43,7 +43,7 @@ Close and reopen Terminal, then:
 
 ```powershell
 cd $HOME\Documents
-git clone <REPO-URL> cgr-gns3-lab        # or unzip the downloaded ZIP here
+git clone https://github.com/cgr-fct/cgr-gns3-lab.git cgr-gns3-lab        # or unzip the downloaded ZIP here
 cd cgr-gns3-lab
 py -m pip install -r tools\requirements.txt
 py tools\cgr_lab.py check
