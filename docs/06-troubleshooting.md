@@ -11,10 +11,15 @@ GNS3 must be open. Check *Edit → Preferences → Server* and pass
   virtualisation on at every start and VirtualBox may refuse it while Hyper-V is active. Either
   turn Hyper-V off (*Windows Features*: untick *Hyper-V*, *Virtual Machine Platform* and
   *Windows Hypervisor Platform*, reboot — this disables WSL2/Docker Desktop), or use VMware.
-* **macOS with VirtualBox:** GNS3 does not start the VM for you — start it in VirtualBox first,
-  then GNS3 (install guide, option B). If the remote server stays red, check the address shown on
-  the VM console and fix it in *Preferences → Server → Remote servers*; `curl http://<address>/v2/version`
-  in Terminal must answer.
+* **Apple Silicon Mac:** VirtualBox cannot run the GNS3 VM (the firmware starts, the system
+  does not boot, the screen stays blank). Use VMware Fusion or UTM (install guide, options A/B).
+
+### UTM (Apple Silicon): the remote server stays red
+GNS3 does not start the UTM VM for you — start it in UTM first, then GNS3. Check the VM address
+(serial terminal: log in `gns3`/`gns3`, `ip -4 addr show eth0`) and that
+`curl http://<address>/v2/version` answers in Terminal; fix the address in
+*Preferences → Server → Remote servers*. The UTM display window may stay black — the console is in
+the serial terminal window.
 
 ### `cgr_lab.py check` uses the wrong compute / says Docker is not available
 It prefers the GNS3 VM, then any other connected server with Docker (e.g. the VirtualBox VM added

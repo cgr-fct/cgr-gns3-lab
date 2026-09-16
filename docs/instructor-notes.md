@@ -110,15 +110,17 @@ redistributed routes).
 **Not verified — please check once on real hardware:**
 
 - [ ] macOS Apple Silicon: GNS3 2.2.54 + ARM64 GNS3 VM on VMware Fusion; Lab 00 end to end.
-- [ ] **VirtualBox** (install guides, option B): Windows with the VirtualBox GNS3 VM (GNS3 manages
-      it; check nested-virtualisation behaviour with Hyper-V on), and Apple Silicon with VirtualBox
-      7.2 (VM created from the two ARM64 disks, added as a *remote server* — GNS3 2.2.54 always
-      runs `VBoxManage modifyvm --nested-hw-virt on`, which may not be accepted on ARM, hence the
-      remote-server setup). Checked here only partially: the ARM64 disks boot on generic
-      EFI/virtio-scsi/virtio-net hardware (QEMU), the VM names its NICs eth0/eth1 with DHCP,
-      its server answers on :80 without auth, a 2.2.54 controller accepts it as a remote compute
-      and `cgr_lab.py` selects it. Container images could not be pulled in that test (registry
-      blocked in the test environment).
+- [ ] **VirtualBox** on Windows (install guide, option B) and on Intel Macs (macOS option C):
+      the VirtualBox GNS3 VM managed by GNS3; on Windows check nested virtualisation with Hyper-V on.
+- [x] **VirtualBox on Apple Silicon does not work** (checked on a Mac with VirtualBox 7.2: GRUB
+      starts, the Ubuntu 20.04 GNS3 VM never comes up — no console, no DHCP lease). Removed from
+      the guide.
+- [ ] **UTM on Apple Silicon** (macOS option B): VM from the two ARM64 disks (VirtIO), one
+      *Shared Network* NIC, serial console, added to GNS3 as a *remote server*. Checked here on
+      the equivalent QEMU machine (virt, EFI, virtio-blk, virtio-net, one NIC): boots in ~4 min
+      under emulation, eth0 gets DHCP, server answers on :80 without auth, a 2.2.54 controller
+      accepts it as a remote compute and `cgr_lab.py` selects it. Not checked: UTM's UI, and
+      pulling/running the lab containers inside that VM (registry blocked in the test environment).
 - [ ] **VLAN-aware bridges, VLAN SVIs, LACP bonds and VRRP (macvlan)** inside the containers —
       the build environment's kernel lacked these features, so the Lab 00 VLAN, the campus
       bonds/SVIs and VRRP were only checked as generated configuration. The GNS3 VM's Ubuntu

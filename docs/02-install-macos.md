@@ -5,28 +5,33 @@ Time: ~30–45 min. Needs ~10 GB free disk and 8 GB RAM.
 > **Use exactly GNS3 version `2.2.54`** for the GUI and the GNS3 VM. It is the last 2.2 release
 > with an Apple Silicon GNS3 VM, and the whole class uses the same version.
 
-The routers and switches run inside the **GNS3 VM**, a small Linux virtual machine. You can run
-it with either hypervisor — pick **one**:
+The routers and switches run inside the **GNS3 VM**, a small Linux virtual machine. Pick **one**
+way to run it:
 
-| | Option A — VMware Fusion Pro | Option B — VirtualBox |
-|---|---|---|
-| Cost | free | free (open source) |
-| Download | Broadcom portal, needs an account that Broadcom must approve (can take days) | direct download, no account |
-| How GNS3 uses it | GNS3 starts and stops the VM for you | you start the VM yourself, GNS3 connects to it as a *remote server* |
-| Apple Silicon | supported by GNS3 | works with VirtualBox **7.2 or newer**; less tested (see note below) |
+| | Option A — VMware Fusion Pro | Option B — UTM | Option C — VirtualBox |
+|---|---|---|---|
+| For | Apple Silicon and Intel | **Apple Silicon** | **Intel Macs** only |
+| Cost / download | free; Broadcom account that must be approved (can take days) | free, direct download, no account | free, direct download, no account |
+| How GNS3 uses it | starts and stops the VM for you | you start the VM, GNS3 connects to it as a *remote server* | starts and stops the VM for you |
+| Status | reference setup | VM image tested on the same virtual hardware; UTM itself less tested | less tested |
 
-If you are not sure, start the Broadcom registration now (section 2A, step 1) and, if it is not approved in
-time, use VirtualBox. You can switch later: your labs live in GNS3 projects, not in the VM.
+VirtualBox does **not** work for the GNS3 VM on Apple Silicon (the VM firmware starts but the
+GNS3 VM system does not boot) — use Fusion or UTM there.
+
+If you are not sure, start the Broadcom registration now (section 2A, step 1) and, if it is not
+approved in time, use option B or C. You can switch later: your labs live in GNS3 projects, not in
+the VM.
 
 ## 1. Download GNS3
 
 From <https://github.com/GNS3/gns3-gui/releases/tag/v2.2.54> download `GNS3-2.2.54.dmg` and the
 GNS3 VM for your Mac ( → *About This Mac*):
 
-| Chip | Option A (VMware Fusion) | Option B (VirtualBox) |
-|---|---|---|
-| Apple M1–M5 | `GNS3.VM.ARM64.2.2.54.zip` | `GNS3.VM.ARM64.2.2.54.zip` |
-| Intel | `GNS3.VM.VMware.Workstation.2.2.54.zip` | `GNS3.VM.VirtualBox.2.2.54.zip` |
+| Chip | GNS3 VM file |
+|---|---|
+| Apple M1–M5 (options A and B) | `GNS3.VM.ARM64.2.2.54.zip` |
+| Intel, option A (Fusion) | `GNS3.VM.VMware.Workstation.2.2.54.zip` |
+| Intel, option C (VirtualBox) | `GNS3.VM.VirtualBox.2.2.54.zip` |
 
 The Apple Silicon file contains only two disk files, `gns3vm-disk1.vmdk` and
 `gns3vm-disk2.vmdk`: you create the VM around them (steps below). Unzip it into a folder you will
@@ -75,13 +80,65 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
    * **VMware (recommended)** → *Refresh* → VM name **GNS3 VM**, **2 vCPUs, 2048 MB RAM** → Finish.
 10. GNS3 starts the VM. In the *Servers Summary* panel (right side) **GNS3 VM** must turn green.
 
-## 2B. Option B — VirtualBox
+## 2B. Option B — UTM (Apple Silicon)
 
-1. Download VirtualBox from <https://www.virtualbox.org/wiki/Downloads>:
-   **macOS / Apple Silicon hosts** (M chips — version **7.2 or newer**) or **macOS / Intel hosts**.
-   Install it and allow the system extension if macOS asks (*System Settings → Privacy & Security*).
-2. Create the host-only network the GNS3 VM will use. Do it in **Terminal** (VirtualBox itself
-   does not need to be open, and no VM needs to exist yet):
+1. Download **UTM** from <https://mac.getutm.app> (free; the Mac App Store version is the same
+   app, but paid) and install it.
+
+**Create the GNS3 VM:**
+
+2. UTM → **Create a New Virtual Machine** → **Virtualize** → **Linux**.
+   * *Hardware*: **Memory 2048 MB** (4096 MB if you have 16 GB), **2 CPU cores**.
+   * Leave **Use Apple Virtualization** unticked (UTM then uses QEMU, which is what we tested).
+   * *Boot image*: nothing to select — just **Continue** (tick *Skip ISO boot* if it is shown).
+   * *Storage*: accept the proposed size (the empty disk is removed in step 3) → Continue.
+   * *Shared Directory*: skip → Continue.
+   * *Summary*: Name **GNS3 VM**, tick **Open VM Settings** → **Save**.
+3. In the settings window:
+   * **Drives**: select the empty disk that was created → **Delete**. Then **New…** → **Import…** →
+     `gns3vm-disk1.vmdk`, interface **VirtIO**. Repeat for `gns3vm-disk2.vmdk` (VirtIO).
+     UTM converts them to its own format; `gns3vm-disk1` must be the **first** drive in the list
+     (drag it up if needed). If a CD/DVD drive is listed, you can delete it.
+   * **Network**: *Network Mode* **Shared Network**, card **virtio-net-pci** (the defaults).
+     One network card is enough: in this mode the Mac can reach the VM and the VM has Internet.
+   * **Devices → New… → Serial**: mode **Built-in Terminal**. The GNS3 VM shows its console there
+     (the normal display window may stay black — that is expected).
+   * **Save**.
+
+**Start the VM and connect GNS3:**
+
+4. Start the VM (▶). Two windows open: the display (may stay black) and the **serial terminal**.
+   After 1–2 minutes the terminal shows `gns3vm login:`. Log in as `gns3` / `gns3` — a GNS3 VM
+   menu or prompt appears; the **IP address** of `eth0` is shown there, or run
+   `ip -4 addr show eth0`. It looks like `192.168.64.5`. Note it.
+   You can also find it from the Mac, in Terminal:
+   ```bash
+   for i in $(seq 2 40); do curl -s -m 1 http://192.168.64.$i/v2/version && echo "   <-- 192.168.64.$i"; done
+   ```
+   (the address that answers with `"version": "2.2.54"` is the VM).
+5. Start GNS3 → *Setup Wizard* → **Run appliances on my local computer** → keep the proposed
+   settings (host `127.0.0.1`, port `3080`) → Finish. Ignore warnings about missing local
+   emulators.
+6. *GNS3 → Preferences → Server* → tab **Remote servers** → **Add**: protocol **HTTP**, host = the
+   VM address from step 4, port **80**, no authentication → OK → **Apply**.
+   The new server appears in the *Servers Summary* panel and must be green.
+   In *Preferences → GNS3 VM* leave *Enable the GNS3 VM* **unticked** (you manage the VM yourself).
+
+Every time you work on the labs: **start the VM in UTM first, then GNS3**. When you finish: close
+GNS3, then stop the VM in UTM (■). If the VM ever gets a different address, update it in
+*Preferences → Server → Remote servers → Edit*.
+
+> **Note:** the Apple Silicon GNS3 VM disks were tested on the same kind of virtual machine UTM
+> creates (QEMU `virt`, VirtIO disks and network, one shared NIC): the VM boots, gets an address on
+> `eth0` and GNS3 2.2.54 uses it as a remote server (`cgr_lab.py` selects it automatically). UTM's
+> own windows and menus were not tested by us; if something differs, tell the lab instructor.
+
+## 2C. Option C — VirtualBox (Intel Macs only)
+
+1. Download VirtualBox (7.1 or newer) from <https://www.virtualbox.org/wiki/Downloads> —
+   **macOS / Intel hosts** — install it and allow the system extension if macOS asks
+   (*System Settings → Privacy & Security*).
+2. Create the host-only network the GNS3 VM will use, in **Terminal**:
    ```bash
    VBoxManage hostonlynet add --name=HostNetwork --netmask=255.255.255.0 \
        --lower-ip=192.168.56.100 --upper-ip=192.168.56.199 --enable
@@ -89,58 +146,14 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
    ```
    If Terminal answers `command not found`, use the full path
    `/Applications/VirtualBox.app/Contents/MacOS/VBoxManage` instead of `VBoxManage`.
-
-**Create the GNS3 VM — Apple Silicon:**
-
-3. *New* (toolbar) — the wizard has a few collapsible sections:
-   * *Virtual machine name and operating system*: Name **GNS3 VM**; ISO image: leave empty;
-     OS **Linux**, distribution **Ubuntu**, version **Ubuntu (64-bit ARM)**.
-   * *Specify virtual hardware*: **Base Memory 2048 MB** (4096 MB if you have 16 GB),
-     **2 CPUs**. Leave *Use EFI* as it is.
-   * *Specify virtual hard disk*: select **Use an Existing Virtual Hard Disk File** → click the
-     folder icon on its right → **Add** → `gns3vm-disk1.vmdk` → **Choose**.
-     (Not *Create a New Virtual Hard Disk*, which is selected by default.)
-   * **Finish**. Don't start the VM yet.
-4. Select the VM → *Settings* → **Storage**: select the storage **controller** (the line above
-   `gns3vm-disk1.vmdk`), click the *Adds hard disk* icon → **Add** → `gns3vm-disk2.vmdk` →
-   **Choose**. `gns3vm-disk1.vmdk` must stay the first disk. Leave any empty optical drive as it is.
-
-   Then, still in *Settings*:
-   * **Network → Adapter 1**: *Attached to* **Host-only Network**, name *HostNetwork* (the one
-     created in step 2; if the name list is empty, step 2 was not done).
-   * **Network → Adapter 2**: tick *Enable*, *Attached to* **NAT** (Internet access for the VM).
-   * OK.
-
-**Create the GNS3 VM — Intel Mac:** *File → Import Appliance* → `GNS3 VM.ova` (from
-`GNS3.VM.VirtualBox.2.2.54.zip`) → Finish. Then *Settings → Network → Adapter 1*: change
-*Attached to* to **Host-only Network** (*HostNetwork*) and leave Adapter 2 as NAT.
-
-**Start the VM and connect GNS3** (Apple Silicon and Intel):
-
-5. Start the VM: *Start* (arrow next to it) → **Start with GUI** the first time, so you can see
-   the console. After 1–2 minutes it shows a blue GNS3 VM screen with its **IP address** on
-   `eth0`, something like `192.168.56.3`. Note it. If you only see a login prompt, log in as
-   `gns3` / `gns3` and run `ip -4 addr show eth0`.
-   Keep the VM window open (you can minimise it) while you work: closing it offers to power off
-   or save the VM. Later you can use **Start without GUI** instead — the VM runs in the background
-   and *Show* opens its window when you need it. (*Start with detachable GUI* also works: its
-   window can be closed while the VM keeps running.)
-6. Start GNS3 → *Setup Wizard* → **Run appliances on my local computer** → keep the proposed
-   settings (host `127.0.0.1`, port `3080`) → Finish. Ignore warnings about missing local
-   emulators.
-7. *GNS3 → Preferences → Server* → tab **Remote servers** → **Add**: protocol **HTTP**, host = the
-   VM address from step 5, port **80**, no authentication → OK → **Apply**.
-   The new server appears in the *Servers Summary* panel and must be green.
-   In *Preferences → GNS3 VM* leave *Enable the GNS3 VM* **unticked** (you manage the VM yourself).
-
-Every time you work on the labs: **start the VM in VirtualBox first, then GNS3**. When you finish:
-close GNS3, then in VirtualBox *Close → ACPI Shutdown* for the VM. If the VM ever gets a different
-address, update it in *Preferences → Server → Remote servers → Edit*.
-
-> **Note (Apple Silicon + VirtualBox):** we checked that the Apple Silicon GNS3 VM disks boot on
-> generic ARM virtual hardware and that GNS3 2.2.54 uses a VM added this way (`cgr_lab.py`
-> selects it automatically). The combination was not tested end-to-end on a real Mac with
-> VirtualBox. If it gives you trouble, use option A, or tell the lab instructor.
+3. Unzip `GNS3.VM.VirtualBox.2.2.54.zip` → VirtualBox *File → Import Appliance* → `GNS3 VM.ova` →
+   Finish. Then *Settings → Network → Adapter 1*: *Attached to* **Host-only Network**
+   (*HostNetwork*); leave Adapter 2 as **NAT**. Don't start the VM.
+4. Start GNS3 → *Setup Wizard*:
+   * **Run appliances in a virtual machine** → Next
+   * Server: host `127.0.0.1`, port `3080` → Next
+   * **VirtualBox**, VM name **GNS3 VM**, **2 vCPUs, 2048 MB RAM** → Finish.
+5. GNS3 starts the VM. In the *Servers Summary* panel **GNS3 VM** must turn green.
 
 ## 3. Python and the lab tools
 
@@ -156,7 +169,7 @@ python tools/cgr_lab.py check
 ```
 
 `check` lists the computes and must end with **Using compute …** and **Docker nodes supported**
-(option A: compute `vm`; option B: the remote server you added).
+(options A and C: compute `vm`; option B: the remote server you added).
 
 (In every new Terminal window: `cd ~/Documents/cgr-gns3-lab && source .venv/bin/activate`.)
 
