@@ -87,17 +87,23 @@ class Restconf:
     def get(self, path="", content="all", raw=False):
         return self.request("GET", path, raw=raw, **({} if raw else {"content": content}))
 
-    def put(self, path, body):
-        return self.request("PUT", path, body)
+    # force=True adds ?force=true: the device then accepts a change that removes
+    # configuration made by hand (CLI) instead of refusing it with 409 resource-denied.
+    def put(self, path, body, force=False):
+        return self.request("PUT", path, body, **_force(force))
 
-    def patch(self, path, body):
-        return self.request("PATCH", path, body)
+    def patch(self, path, body, force=False):
+        return self.request("PATCH", path, body, **_force(force))
 
-    def post(self, path, body):
-        return self.request("POST", path, body)
+    def post(self, path, body, force=False):
+        return self.request("POST", path, body, **_force(force))
 
-    def delete(self, path):
-        return self.request("DELETE", path)
+    def delete(self, path, force=False):
+        return self.request("DELETE", path, **_force(force))
+
+
+def _force(force):
+    return {"force": "true"} if force else {}
 
 
 def _body(arg):
@@ -115,6 +121,8 @@ def main():
     ap.add_argument("body", nargs="?", help="JSON/YAML text or @file")
     ap.add_argument("--content", default="all", choices=["all", "config", "nonconfig"])
     ap.add_argument("--raw", action="store_true", help="path is a full URL path (/restconf/...)")
+    ap.add_argument("--force", action="store_true",
+                    help="write even if configuration made by hand (CLI) would be removed")
     ap.add_argument("-v", "--verbose", action="store_true")
     ap.add_argument("-i", "--inventory")
     args = ap.parse_args()
@@ -133,12 +141,12 @@ def main():
         if args.method == "get":
             out = rc.get(args.path, args.content, raw=args.raw)
         elif args.method == "delete":
-            out = rc.delete(args.path)
+            out = rc.delete(args.path, force=args.force)
         else:
             body = _body(args.body)
             if body is None:
                 sys.exit("this method needs a body")
-            out = getattr(rc, args.method)(args.path, body)
+            out = getattr(rc, args.method)(args.path, body, force=args.force)
     except RestconfError as e:
         sys.exit(f"ERROR: {e}")
     except requests.RequestException as e:

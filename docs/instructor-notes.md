@@ -49,6 +49,18 @@ docker buildx build --platform linux/amd64,linux/arm64 -f images/netauto/Dockerf
     RESTCONF datastore (`/etc/cgr/running.json`), so both paths stay consistent.
   * The datastore only reflects what was configured through the model; manual CLI changes are
     visible in `state` and in `apply_intent.py --diff` (drift), not in the RESTCONF config.
+  * **CLI/automation ownership guard** (`automation/cgrimport.py`). Every push compares the
+    device's live configuration, normalised to order-insensitive lines, with what the previous
+    and the new model data generate. Lines explained by neither were typed by hand; if the push
+    would remove them it is refused (`REFUSED` / RESTCONF `409 resource-denied`) unless forced
+    (`--force`, `?force=true`, Ansible `-e force=true`).
+  * **Import** (`apply_intent.py <file> --import <devices>|all`) parses `/etc/network/interfaces`,
+    `vtysh show running-config` and the DHCP files back into `cgr-device` data and lists what the
+    model cannot hold (MTU, prefix-lists, general route-maps, static routes, …) as notes. OSPF
+    `network` statements are converted to per-interface areas; a missing OSPF router-id is set to
+    the one FRR picks. Suggested semester flow: labs by CLI (RESTCONF GET anytime); after the
+    automation class either a fresh lab copy by automation, mixed ownership (e.g. Lab 04: Provider
+    AS by automation, Bank by CLI), or take-over with `--import all`.
 * **FRR profile** `datacenter` (as on Cumulus): eBGP needs no explicit policy; faster timers.
 * **Kernel STP** (802.1D) — mstpd (RSTP) cannot run inside containers; no admin-edge setting.
 * **GNS3 2.2.54** for everyone — last 2.2 release with an ARM64 GNS3 VM; `cgr_lab.py` uses the
@@ -84,6 +96,13 @@ redistributed routes).
   `area 20 range`, DR election, `default-information originate always`, full reachability.
 * **DHCP**: server and relay deployed by SSH and by RESTCONF; Linux hosts lease addresses at boot
   (direct and relayed); configuration and daemons survive a stop/start of the nodes.
+* **CLI → automation take-over** (Lab 04 topology): hand-configured routers refused by SSH push,
+  RESTCONF PATCH and the Ansible playbook, with the offending settings listed; `--import` → clean
+  `--diff` except the noted lines; `--force` removes them; a clean import pushes without force;
+  drift after a hand edit on a managed device is detected and refused. Importing the six routers
+  of the deployed Lab 04 solution reproduces the solution intent exactly (up to list order).
+  Offline, the campus intents (bonds, SVIs, VRRP, DHCP relay/server) round-trip through
+  render → import with no semantic difference.
 * **RESTCONF**: all methods, list keys, leaf targets, content filtering, operational state
   (interfaces, routes, OSPF/BGP neighbours), 400/401/404/405/409/415 error reports, YANG
   validation errors, hostname changes, datastore shared with SSH pushes, Ansible `uri` playbooks.

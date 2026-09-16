@@ -38,6 +38,13 @@ The GNS3 VM kernel is missing a feature (VLAN filtering, bonding): see the item 
 modules above. The RESTCONF server rolls the change back; `apply_intent.py` leaves the files
 written, so fix the cause and push again.
 
+### `REFUSED … hand-made setting(s) that this push would remove` / RESTCONF `409 resource-denied`
+The device has configuration typed by hand that the pushed data does not contain, so the push
+would delete it. Either keep it — `./apply_intent.py <file> --import <device>`, check the notes,
+push again — or drop it: `--force` (apply_intent.py, restconf.py), `?force=true` (curl),
+`-e force=true` (Ansible playbook). Settings the model cannot express (see the import notes)
+can only be kept by leaving the device CLI-managed.
+
 ### RESTCONF: `401`
 User `cgr`, password `cgrlab` (`curl -u cgr:cgrlab …`).
 
@@ -49,7 +56,8 @@ The data does not match the `cgr-device` YANG model — the message names the no
 
 ### RESTCONF: `404` on PATCH although the interface exists
 PATCH only works on data that exists **in the RESTCONF datastore** (configured by RESTCONF or
-`apply_intent.py`), not on configuration typed by hand. Use PUT or POST to create it.
+`apply_intent.py`), not on configuration typed by hand. Import the device first
+(`./apply_intent.py <file> --import <device>` and push), or create the data with PUT or POST.
 
 ### RESTCONF: connection refused
 The server runs on the router/switch: `ps aux | grep cgr-restconf`, log in

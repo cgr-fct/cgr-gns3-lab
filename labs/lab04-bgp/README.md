@@ -99,3 +99,6 @@ BGP is part of the `cgr-device` model (`bgp: {asn, router-id, network, aggregate
 Configure the Provider AS (R4, R5, R6) **only by automation** — an intent file pushed with
 `./apply_intent.py`, or RESTCONF requests with `./restconf.py` / `curl` — and read the BGP
 sessions back with `./restconf.py R4 get state/bgp-neighbor --content nonconfig`.
+If you already configured R4–R6 by CLI, `./apply_intent.py intent/provider.yml --import R4 R5 R6`
+gives you a starting intent file (route-maps other than a single `set local-preference` or an
+own-AS prepend are listed as notes).

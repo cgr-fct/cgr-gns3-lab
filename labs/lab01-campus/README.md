@@ -97,7 +97,10 @@ switches). Compare the routing tables, the default route and the summarisation w
 
 ### Part C — The same network by automation
 Describe **one scenario** of the access pod (Access1, Access2, Distribution1, Distribution2) as
-YAML intent (`/root/cgr/intent/campus.yml` on netauto, model: `cgr-device`) and deploy it:
+YAML intent (`/root/cgr/intent/campus.yml` on netauto, model: `cgr-device`) and deploy it.
+On switches you already configured by CLI, start with an import (`./apply_intent.py
+intent/campus.yml --import Access1 Access2 Distribution1 Distribution2`), review the file and its
+notes, and continue from there — a push that would delete hand-made settings is refused:
 
 ```bash
 cd /root/cgr

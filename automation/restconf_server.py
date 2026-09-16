@@ -44,6 +44,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cgrimport  # noqa: E402
 import cgrmodel  # noqa: E402
 
 MOD = cgrmodel.MODULE
@@ -262,7 +263,19 @@ def run(cmd):
     return subprocess.run(["sh", "-c", cmd], capture_output=True, text=True)
 
 
-def apply_config(new, old):
+def guard_handmade(new, old):
+    """Refuse a write that would silently remove configuration typed by hand (CLI)."""
+    losses = cgrimport.handmade_losses(cgrimport.snapshot_local(), old, new)
+    if not losses:
+        return
+    shown = "; ".join(losses[:10]) + (f"; ... and {len(losses) - 10} more" if len(losses) > 10 else "")
+    raise RCError(409, "resource-denied",
+                  f"this write would remove {len(losses)} setting(s) made by hand (not through the model): "
+                  f"{shown}. Add them to the data (apply_intent.py <file> --import <device> reads them) "
+                  f"or repeat the request with ?force=true to remove them")
+
+
+def apply_config(new, old, force=False):
     """Validate, render and apply `new` (content of cgr-device:device); roll back on failure."""
     errors = cgrmodel.validate(new)
     if errors:
@@ -270,6 +283,8 @@ def apply_config(new, old):
     if DRY_RUN[0]:
         RUNNING.write_text(json.dumps(new, indent=2))
         return
+    if not force:
+        guard_handmade(new, old)
     files, commands = cgrmodel.render(new)
     eni_path = Path("/etc/network/interfaces")
     targets = [eni_path] + [Path(p) for p in files if p.startswith("/")]
@@ -477,6 +492,7 @@ class Handler(BaseHTTPRequestHandler):
     # -- the datastore ----------------------------------------------------------
     def data(self, path, query):
         content = query.get("content", ["all"])[0]
+        force = query.get("force", ["false"])[0].lower() in ("true", "1", "yes")
         if content not in ("all", "config", "nonconfig"):
             raise RCError(400, "invalid-value", "content must be all, config or nonconfig", "protocol")
         steps = parse_path(path)
@@ -542,7 +558,7 @@ class Handler(BaseHTTPRequestHandler):
                     status, headers = 201, {"Location": location}
                 else:
                     raise RCError(405, "operation-not-supported", f"{method} not supported", "protocol")
-            apply_config(tree["device"], old)
+            apply_config(tree["device"], old, force)
             self.send(status, None, headers)
 
     # -- write helpers ---------------------------------------------------------

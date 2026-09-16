@@ -13,6 +13,7 @@ automatically. Login on the devices: user `cgr`, password `cgrlab`.
 | `intent/*.yml` | Intent files (the device data, in YAML) |
 | `templates/*.j2` | Jinja2 templates that turn the model into device files (interfaces, frr.conf, dhcpd.conf) |
 | `cgrmodel.py` | Validation (yangson) and rendering, shared by `apply_intent.py` and the RESTCONF server |
+| `cgrimport.py` | Reads a device's live (CLI) configuration back into the model: used by `--import` and by the hand-made-configuration guard |
 | `cgrlib.py` | Small Python library: inventory + SSH sessions |
 | `collect.py` | Run a command on all devices (text or JSON); back up configurations |
 | `ansible.cfg`, `playbooks/` | The same ideas with Ansible (RESTCONF through the `uri` module) |
@@ -107,8 +108,16 @@ rc.patch("", {"cgr-device:device": {"bridge": {"vlans": [30]}}})
 **Good to know:** the RESTCONF datastore holds what was configured through RESTCONF or
 `apply_intent.py`. Configuration typed by hand (vtysh, `/etc/network/interfaces`) is not
 read back into it, but its effects show up in `state`. A RESTCONF write replaces the data-plane
-part of `/etc/network/interfaces` and the whole FRR configuration of the device — so on one
-device, use either the CLI or the model, not both at the same time.
+part of `/etc/network/interfaces` and the whole FRR configuration of the device, so the server
+**refuses a write that would remove settings made by hand** (see section 3a):
+
+```
+HTTP 409 - resource-denied: this write would remove 2 setting(s) made by hand (not through the model):
+frr | router ospf | passive-interface swp3; interfaces | swp2 | mtu 1400. ...
+```
+
+Add `?force=true` to the URL (`./restconf.py R1 patch … --force`, `rc.patch(…, force=True)`) to
+write anyway and drop them. Read-only requests (GET) are always fine, on any device.
 
 ## 3. Intent files and `apply_intent.py`
 
@@ -130,11 +139,14 @@ devices:
 ./apply_intent.py intent/lab00.yml                  # push over SSH (files + ifreload + frr-reload + dhcpd)
 ./apply_intent.py intent/lab00.yml --restconf       # push with RESTCONF (one PUT per device)
 ./apply_intent.py intent/lab00.yml --render out     # write the generated files to out/<device>/
+./apply_intent.py intent/lab00.yml --import sw1     # read sw1's live configuration into the file
+./apply_intent.py intent/lab00.yml --force          # push even if hand-made settings are removed
 ```
 
 Pushing is **declarative and idempotent**: you describe the desired state, the tools apply only
 the differences (`ifreload`, `frr-reload.py`), and a second push changes nothing. After a push,
-`--diff` shows any drift introduced later by hand or by RESTCONF.
+`--diff` shows any drift introduced later by hand or by RESTCONF (`-`/`+` lines, compared by
+meaning, not by text). Devices with configuration typed by hand: see section 3a.
 
 A bigger example (bonds, SVIs, VRRP, DHCP relay, OSPF with a summarised area, BGP):
 
@@ -164,6 +176,44 @@ devices:
       neighbor:
         - {address: 10.8.255.2, remote-as: internal, update-source: lo, next-hop-self: true}
 ```
+
+## 3a. CLI and automation on the same lab
+
+The routers and switches have **one** configuration. The CLI edits it directly; the model
+(RESTCONF, `apply_intent.py`, Ansible) regenerates the data-plane part of
+`/etc/network/interfaces`, `frr.conf` and the DHCP files from the device's model data. So a
+device is either **CLI-managed** or **model-managed** at any moment, and the tools protect you
+from mixing them by accident:
+
+* **Guard.** A push (SSH, RESTCONF, Ansible) is **refused** when it would remove a setting that
+  was not made through the model — `REFUSED` in `apply_intent.py`, `409 resource-denied` in
+  RESTCONF. The message lists the settings. Settings the model created earlier can be changed
+  or removed freely. `--force` / `?force=true` / `-e force=true` overrides the guard.
+* **Take-over (import).** `--import` reads the live configuration of devices and writes it into
+  an intent file, so you continue by automation from what you built by hand:
+
+```bash
+./apply_intent.py intent/mylab.yml --import R1 R2      # or: --import all
+#   R1 ... imported (2 note(s))
+#      note: interfaces: swp2 option 'mtu 1400' is not in the model
+#      note: frr: 'ip prefix-list ONLYLO seq 5 permit 10.1.1.1/32' is not in the model
+./apply_intent.py intent/mylab.yml --diff              # should be empty, except the noted lines
+./apply_intent.py intent/mylab.yml                     # push: the device is now model-managed
+```
+
+  The notes (also written at the top of the intent file) list what the model cannot express;
+  those settings are what a push would remove, so the push is refused until you decide: drop them
+  (`--force`) or keep that device CLI-managed. Some conversions are automatic and harmless:
+  OSPF `network … area …` statements become per-interface `ip ospf area`, and a missing OSPF
+  router-id is set to the one FRR had chosen.
+* **Drift.** On a model-managed device, a later change by hand shows up in `--diff`, marked as
+  made by hand; the next push is refused until you import it again (keep it) or `--force`
+  (discard it).
+
+Typical semester flow: build a lab by CLI → read it with RESTCONF GET at any time → after the
+automation class, either start a fresh copy of the lab by automation, automate only some devices
+(e.g. the Provider AS in Lab 04) while the others stay CLI-managed, or take the whole lab over with
+`--import all`.
 
 ## 4. Scripts and Ansible
 

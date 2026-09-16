@@ -89,6 +89,12 @@ Now `pc1> ping 10.0.0.2` works. Collect the result:
 ./collect.py all -c "bridge vlan show"
 ```
 
+Your hand-made sw1 configuration was a subset of the intent, so the push only added to it. Now
+add `mtu 9000` under `iface swp2` on sw1 (`ifreload -a`) and run `--diff` and a push again: the
+push is **refused**, because it would delete a setting you typed by hand. Read the message, then
+decide: `./apply_intent.py intent/lab00.yml --force` (drop it) — or keep it by hand and leave sw1
+out of the intent. See [toolkit, section 3a](../../automation/README.md#3a-cli-and-automation-on-the-same-lab).
+
 ## 5. RESTCONF
 
 Every switch runs a RESTCONF server (HTTPS, user `cgr`, password `cgrlab`) for the YANG module

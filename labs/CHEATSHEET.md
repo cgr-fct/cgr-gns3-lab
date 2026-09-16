@@ -152,6 +152,10 @@ curl -sk -u cgr:cgrlab -X PUT -H "Content-Type: application/yang-data+json" \
 curl -sk -u cgr:cgrlab -X DELETE "$R/svi=4"
 ```
 
+A write that would remove configuration typed by hand is refused with `409 resource-denied`.
+Keep it: `./apply_intent.py <file> --import <device>` on netauto (then push). Drop it: add
+`?force=true` to the URL.
+
 ## Linux hosts (UserUbuntu*, servers)
 
 The hosts are small Debian containers; the data port is `eth1`.
