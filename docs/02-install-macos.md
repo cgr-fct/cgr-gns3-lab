@@ -117,10 +117,14 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
 
 **Start the VM and connect GNS3** (Apple Silicon and Intel):
 
-5. Start the VM (right-click → *Start → Headless Start*, or a normal start to watch it boot).
-   After 1–2 minutes the VM console shows a blue GNS3 VM screen with its **IP address** on
-   `eth0`, something like `192.168.56.3`. Note it. (With a headless start: *Show* opens the console.
-   If you only see a login prompt, log in as `gns3` / `gns3` and run `ip -4 addr show eth0`.)
+5. Start the VM: *Start* (arrow next to it) → **Start with GUI** the first time, so you can see
+   the console. After 1–2 minutes it shows a blue GNS3 VM screen with its **IP address** on
+   `eth0`, something like `192.168.56.3`. Note it. If you only see a login prompt, log in as
+   `gns3` / `gns3` and run `ip -4 addr show eth0`.
+   Keep the VM window open (you can minimise it) while you work: closing it offers to power off
+   or save the VM. Later you can use **Start without GUI** instead — the VM runs in the background
+   and *Show* opens its window when you need it. (*Start with detachable GUI* also works: its
+   window can be closed while the VM keeps running.)
 6. Start GNS3 → *Setup Wizard* → **Run appliances on my local computer** → keep the proposed
    settings (host `127.0.0.1`, port `3080`) → Finish. Ignore warnings about missing local
    emulators.
