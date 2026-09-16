@@ -14,6 +14,16 @@ GNS3 must be open. Check *Edit → Preferences → Server* and pass
 * **Apple Silicon Mac:** VirtualBox cannot run the GNS3 VM (the firmware starts, the system
   does not boot, the screen stays blank). Use VMware Fusion or UTM (install guide, options A/B).
 
+### "Could not pull the 'ghcr.io/…' image" (UTM on macOS)
+The VM has no Internet access. The usual cause is a **VPN** on the Mac (e.g. the university VPN):
+with it active, UTM's *Shared Network* does not forward the VM's traffic. Disconnect the VPN, quit
+UTM (⌘Q), start the VM again, and check inside the VM (`ssh gns3@<VM address>`, password `gns3`):
+`ping -c2 1.1.1.1` and `curl -sI https://ghcr.io/v2/`. Also check *System Settings → Privacy &
+Security → Local Network* (UTM allowed) and firewalls/content filters. Then pull the images once
+by hand (`docker pull ghcr.io/cgr-fct/cgr-frr:latest` and `…/cgr-netauto:latest`) and build
+again. On other systems the same message means the GNS3 VM has no Internet access or the first
+download was too slow — pulling by hand in the VM helps there too.
+
 ### UTM (Apple Silicon): the remote server stays red
 GNS3 does not start the UTM VM for you — start it in UTM first, then GNS3. Check the VM address
 (serial terminal: log in `gns3`/`gns3`, `ip -4 addr show eth0`) and that

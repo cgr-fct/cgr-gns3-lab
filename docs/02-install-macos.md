@@ -128,6 +128,19 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
    The new server appears in the *Servers Summary* panel and must be green.
    In *Preferences → GNS3 VM* leave *Enable the GNS3 VM* **unticked** (you manage the VM yourself).
 
+7. Check that the VM has Internet access and download the lab images once (≈500 MB; GNS3's own
+   download has a short timeout). From Terminal on the Mac, log in to the VM with
+   `ssh gns3@<VM address>` (password `gns3`; choose *Shell* if a menu appears), then:
+   ```bash
+   curl -sI https://ghcr.io/v2/ | head -1        # must print a line starting with HTTP
+   docker pull ghcr.io/cgr-fct/cgr-frr:latest
+   docker pull ghcr.io/cgr-fct/cgr-netauto:latest
+   ```
+   **VPN:** while a VPN is active on the Mac (e.g. the university VPN), UTM's *Shared Network*
+   gives the VM no Internet access — `curl` hangs and GNS3 reports *Could not pull the …
+   image*. Disconnect the VPN, quit UTM (⌘Q) and start the VM again. Once the images are
+   downloaded, the labs themselves don't need Internet access.
+
 Every time you work on the labs: **start the VM in UTM first, then GNS3**. When you finish: close
 GNS3, then stop the VM in UTM (■). If the VM ever gets a different address, update it in
 *Preferences → Server → Remote servers → Edit*.
