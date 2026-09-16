@@ -3,18 +3,17 @@
 **Topics:** OSPF inside each AS, iBGP full mesh, eBGP between ASes, next-hop reachability,
 route aggregation, local preference for inbound and outbound traffic selection.
 
-![statement figure](statement-figure.png)
+![Lab 04 topology](figure.png)
 
 ```bash
 python tools/cgr_lab.py build labs/lab04-bgp --start
 ```
 
-## Addressing (use this table — it corrects the figure)
+## Addressing
 
-The figure labels three provider links 10.1.**405**.0/29, 10.1.**406**.0/29 and 10.1.**506**.0/29.
-Those are not valid IPv4 addresses (an octet cannot be larger than 255). In the lab use
-**10.1.45.0/29**, **10.1.46.0/29** and **10.1.56.0/29**, with the same host numbers. The figure
-shows no address for R4's loopback: use **10.4.4.4/24**.
+(Previous years' statement labelled three provider links 10.1.405/406/506.0/29, which are not
+valid IPv4 networks; this year they are **10.1.45.0/29**, **10.1.46.0/29** and **10.1.56.0/29**,
+and R4 has the loopback **10.4.4.4/24**. The figure above already uses these addresses.)
 
 | Link | Subnet | Ports | Addresses |
 |---|---|---|---|

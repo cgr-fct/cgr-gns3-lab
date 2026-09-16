@@ -1,0 +1,22 @@
+title: "Lab 03 — IS-IS"
+size: [1000, 580]
+note: "Loopbacks 10.255.3.N/32 — management 192.168.100.0/24, netauto .10 (not shown)"
+groups:
+  - {label: "Part B: area 49.0001", x: 170, y: 70, w: 290, h: 440, color: teal, label_at: bl}
+  - {label: "Part B: area 49.0002", x: 560, y: 70, w: 290, h: 440, color: purple, label_at: br}
+nodes:
+  r1: {type: router, x: 320, y: 170, label: above, sub: "lo 10.255.3.1/32"}
+  r2: {type: router, x: 700, y: 170, label: above, sub: "lo 10.255.3.2/32"}
+  r3: {type: router, x: 320, y: 390, label: below, sub: "lo 10.255.3.3/32"}
+  r4: {type: router, x: 700, y: 390, label: below, sub: "lo 10.255.3.4/32"}
+  pc1: {type: host, x: 80, y: 170, label: below, sub: ["172.16.1.10/24", "LAN 172.16.1.0/24"]}
+  pc3: {type: host, x: 80, y: 390, label: below, sub: ["172.16.3.10/24", "LAN 172.16.3.0/24"]}
+  pc4: {type: host, x: 930, y: 390, label: below, sub: ["172.16.4.10/24", "LAN 172.16.4.0/24"]}
+links:
+  - {a: r1, b: r2, pa: "swp1 .1", pb: "swp1 .2", net: 10.3.12.0/30, shift: [0, -16], pdist: 36, side: 1}
+  - {a: r1, b: r3, pa: "swp2 .1", pb: "swp1 .2", net: 10.3.13.0/30, shift: [-58, 0], side: 1}
+  - {a: r2, b: r4, pa: "swp2 .1", pb: "swp1 .2", net: 10.3.24.0/30, shift: [58, 0], side: -1}
+  - {a: r3, b: r4, pa: "swp2 .1", pb: "swp2 .2", net: 10.3.34.0/30, shift: [0, -16], pdist: 36, side: 1}
+  - {a: r1, b: pc1, pa: "swp3 .1", pb: "e0 .10", pdist: 34, side: 1}
+  - {a: r3, b: pc3, pa: "swp3 .1", pb: "e0 .10", pdist: 34, side: 1}
+  - {a: r4, b: pc4, pa: "swp3 .1", pb: "e0 .10", pdist: 34, side: -1}

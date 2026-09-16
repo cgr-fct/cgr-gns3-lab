@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="470" viewBox="0 0 900 470" font-family="DejaVu Sans, Helvetica, Arial, sans-serif">
+<rect width="900" height="470" fill="#ffffff"/>
+<text x="24.0" y="36.0" font-size="20" font-weight="bold" fill="#0f172a" text-anchor="start">Lab 00 — First contact</text>
+<rect x="180" y="80" width="540" height="330" rx="18" fill="#f0fdfa" stroke="#0d9488" stroke-width="2" stroke-dasharray="8 5"/>
+<text x="706.0" y="104.0" font-size="14" font-weight="bold" fill="#0d9488" text-anchor="end">VLAN 10</text>
+<line x1="324.0" y1="170.0" x2="576.0" y2="170.0" stroke="#475569" stroke-width="2.5"/>
+<line x1="300.0" y1="194.0" x2="300.0" y2="308.0" stroke="#475569" stroke-width="2.5"/>
+<line x1="600.0" y1="194.0" x2="600.0" y2="308.0" stroke="#475569" stroke-width="2.5"/>
+<rect x="274.0" y="154.0" width="52" height="32" rx="6" fill="#047857" stroke="#064e3b" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M284,164 h30 M310,161 l4,3 l-4,3"/><path d="M316,176 h-30 M290,173 l-4,3 l4,3"/></g>
+<rect x="574.0" y="154.0" width="52" height="32" rx="6" fill="#047857" stroke="#064e3b" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M584,164 h30 M610,161 l4,3 l-4,3"/><path d="M616,176 h-30 M590,173 l-4,3 l4,3"/></g>
+<rect x="280.0" y="312.0" width="40" height="28" rx="3" fill="#475569" stroke="#1e293b" stroke-width="1.5"/><rect x="284.0" y="316.0" width="32" height="20" fill="#e2e8f0"/><rect x="288" y="342.0" width="24" height="4" rx="1" fill="#1e293b"/>
+<rect x="580.0" y="312.0" width="40" height="28" rx="3" fill="#475569" stroke="#1e293b" stroke-width="1.5"/><rect x="584.0" y="316.0" width="32" height="20" fill="#e2e8f0"/><rect x="588" y="342.0" width="24" height="4" rx="1" fill="#1e293b"/>
+<text x="354.0" y="186.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp1</text>
+<text x="546.0" y="186.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp1</text>
+<text x="450.0" y="158.0" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">trunk (VLAN 10 tagged)</text>
+<text x="312.0" y="224.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp2</text>
+<text x="312.0" y="286.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">e0</text>
+<text x="238.0" y="255.0" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">access VLAN 10</text>
+<text x="588.0" y="224.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp2</text>
+<text x="588.0" y="286.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">e0</text>
+<text x="662.0" y="255.0" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">access VLAN 10</text>
+<text x="300.0" y="124.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">sw1</text>
+<text x="300.0" y="139.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">mgmt 192.168.100.11</text>
+<text x="600.0" y="124.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">sw2</text>
+<text x="600.0" y="139.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">mgmt 192.168.100.12</text>
+<text x="300.0" y="368.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">pc1</text>
+<text x="300.0" y="383.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">10.0.0.1/24</text>
+<text x="600.0" y="368.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">pc2</text>
+<text x="600.0" y="383.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">10.0.0.2/24</text>
+<g transform="translate(38,444) scale(0.6) translate(-38,-444)"><circle cx="38" cy="444" r="22" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M25,444 h9 M31,441 l3,3 l-3,3"/><path d="M51,444 h-9 M45,441 l-3,3 l3,3"/><path d="M38,440 v-9 M35,433 l3,-3 l3,3"/><path d="M38,448 v9 M35,455 l3,3 l3,-3"/></g></g>
+<text x="58.0" y="449.0" font-size="12" font-weight="normal" fill="#475569" text-anchor="start">router</text>
+<g transform="translate(150,444) scale(0.6) translate(-150,-444)"><rect x="124.0" y="428.0" width="52" height="32" rx="6" fill="#047857" stroke="#064e3b" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M134,438 h30 M160,435 l4,3 l-4,3"/><path d="M166,450 h-30 M140,447 l-4,3 l4,3"/></g></g>
+<text x="170.0" y="449.0" font-size="12" font-weight="normal" fill="#475569" text-anchor="start">switch</text>
+<g transform="translate(262,444) scale(0.6) translate(-262,-444)"><rect x="242.0" y="426.0" width="40" height="28" rx="3" fill="#475569" stroke="#1e293b" stroke-width="1.5"/><rect x="246.0" y="430.0" width="32" height="20" fill="#e2e8f0"/><rect x="250" y="456.0" width="24" height="4" rx="1" fill="#1e293b"/></g>
+<text x="282.0" y="449.0" font-size="12" font-weight="normal" fill="#475569" text-anchor="start">host / PC</text>
+<text x="876.0" y="449.0" font-size="12" font-weight="normal" fill="#475569" text-anchor="end">Management 192.168.100.0/24 — netauto .10 (not shown)</text>
+</svg>

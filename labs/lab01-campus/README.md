@@ -4,7 +4,7 @@
 routing, DHCP (server and relay), OSPF or IS-IS between the pods, default route,
 summarisation, and configuring the network by model-driven automation (YAML / RESTCONF).
 
-![topology](air-topology.png)
+![Lab 01 topology](figure.png)
 
 ## The network
 

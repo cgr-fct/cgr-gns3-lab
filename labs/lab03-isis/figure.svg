@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="580" viewBox="0 0 1000 580" font-family="DejaVu Sans, Helvetica, Arial, sans-serif">
+<rect width="1000" height="580" fill="#ffffff"/>
+<text x="24.0" y="36.0" font-size="20" font-weight="bold" fill="#0f172a" text-anchor="start">Lab 03 — IS-IS</text>
+<rect x="170" y="70" width="290" height="440" rx="18" fill="#f0fdfa" stroke="#0d9488" stroke-width="2" stroke-dasharray="8 5"/>
+<text x="184.0" y="496.0" font-size="14" font-weight="bold" fill="#0d9488" text-anchor="start">Part B: area 49.0001</text>
+<rect x="560" y="70" width="290" height="440" rx="18" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2" stroke-dasharray="8 5"/>
+<text x="836.0" y="496.0" font-size="14" font-weight="bold" fill="#7c3aed" text-anchor="end">Part B: area 49.0002</text>
+<line x1="342.0" y1="170.0" x2="678.0" y2="170.0" stroke="#475569" stroke-width="2.5"/>
+<line x1="320.0" y1="192.0" x2="320.0" y2="368.0" stroke="#475569" stroke-width="2.5"/>
+<line x1="700.0" y1="192.0" x2="700.0" y2="368.0" stroke="#475569" stroke-width="2.5"/>
+<line x1="342.0" y1="390.0" x2="678.0" y2="390.0" stroke="#475569" stroke-width="2.5"/>
+<line x1="298.0" y1="170.0" x2="102.0" y2="170.0" stroke="#475569" stroke-width="2.5"/>
+<line x1="298.0" y1="390.0" x2="102.0" y2="390.0" stroke="#475569" stroke-width="2.5"/>
+<line x1="722.0" y1="390.0" x2="908.0" y2="390.0" stroke="#475569" stroke-width="2.5"/>
+<circle cx="320" cy="170" r="22" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M307,170 h9 M313,167 l3,3 l-3,3"/><path d="M333,170 h-9 M327,167 l-3,3 l3,3"/><path d="M320,166 v-9 M317,159 l3,-3 l3,3"/><path d="M320,174 v9 M317,181 l3,3 l3,-3"/></g>
+<circle cx="700" cy="170" r="22" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M687,170 h9 M693,167 l3,3 l-3,3"/><path d="M713,170 h-9 M707,167 l-3,3 l3,3"/><path d="M700,166 v-9 M697,159 l3,-3 l3,3"/><path d="M700,174 v9 M697,181 l3,3 l3,-3"/></g>
+<circle cx="320" cy="390" r="22" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M307,390 h9 M313,387 l3,3 l-3,3"/><path d="M333,390 h-9 M327,387 l-3,3 l3,3"/><path d="M320,386 v-9 M317,379 l3,-3 l3,3"/><path d="M320,394 v9 M317,401 l3,3 l3,-3"/></g>
+<circle cx="700" cy="390" r="22" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M687,390 h9 M693,387 l3,3 l-3,3"/><path d="M713,390 h-9 M707,387 l-3,3 l3,3"/><path d="M700,386 v-9 M697,379 l3,-3 l3,3"/><path d="M700,394 v9 M697,401 l3,3 l3,-3"/></g>
+<rect x="60.0" y="152.0" width="40" height="28" rx="3" fill="#475569" stroke="#1e293b" stroke-width="1.5"/><rect x="64.0" y="156.0" width="32" height="20" fill="#e2e8f0"/><rect x="68" y="182.0" width="24" height="4" rx="1" fill="#1e293b"/>
+<rect x="60.0" y="372.0" width="40" height="28" rx="3" fill="#475569" stroke="#1e293b" stroke-width="1.5"/><rect x="64.0" y="376.0" width="32" height="20" fill="#e2e8f0"/><rect x="68" y="402.0" width="24" height="4" rx="1" fill="#1e293b"/>
+<rect x="910.0" y="372.0" width="40" height="28" rx="3" fill="#475569" stroke="#1e293b" stroke-width="1.5"/><rect x="914.0" y="376.0" width="32" height="20" fill="#e2e8f0"/><rect x="918" y="402.0" width="24" height="4" rx="1" fill="#1e293b"/>
+<text x="378.0" y="186.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp1 .1</text>
+<text x="642.0" y="186.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp1 .2</text>
+<text x="510.0" y="158.0" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">10.3.12.0/30</text>
+<text x="308.0" y="222.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp2 .1</text>
+<text x="308.0" y="346.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp1 .2</text>
+<text x="262.0" y="284.0" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">10.3.13.0/30</text>
+<text x="712.0" y="222.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp2 .1</text>
+<text x="712.0" y="346.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp1 .2</text>
+<text x="758.0" y="284.0" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">10.3.24.0/30</text>
+<text x="378.0" y="406.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp2 .1</text>
+<text x="642.0" y="406.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp2 .2</text>
+<text x="510.0" y="378.0" font-size="12" font-weight="bold" fill="#1e293b" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">10.3.34.0/30</text>
+<text x="264.0" y="162.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp3 .1</text>
+<text x="136.0" y="162.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">e0 .10</text>
+<text x="264.0" y="382.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp3 .1</text>
+<text x="136.0" y="382.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">e0 .10</text>
+<text x="756.0" y="382.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">swp3 .1</text>
+<text x="874.0" y="382.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">e0 .10</text>
+<text x="320.0" y="126.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">r1</text>
+<text x="320.0" y="141.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">lo 10.255.3.1/32</text>
+<text x="700.0" y="126.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">r2</text>
+<text x="700.0" y="141.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">lo 10.255.3.2/32</text>
+<text x="320.0" y="428.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">r3</text>
+<text x="320.0" y="443.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">lo 10.255.3.3/32</text>
+<text x="700.0" y="428.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">r4</text>
+<text x="700.0" y="443.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">lo 10.255.3.4/32</text>
+<text x="80.0" y="208.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">pc1</text>
+<text x="80.0" y="223.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">172.16.1.10/24</text>
+<text x="80.0" y="237.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">LAN 172.16.1.0/24</text>
+<text x="80.0" y="428.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">pc3</text>
+<text x="80.0" y="443.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">172.16.3.10/24</text>
+<text x="80.0" y="457.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">LAN 172.16.3.0/24</text>
+<text x="930.0" y="428.0" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">pc4</text>
+<text x="930.0" y="443.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">172.16.4.10/24</text>
+<text x="930.0" y="457.0" font-size="11" font-weight="normal" fill="#475569" text-anchor="middle" stroke="#ffffff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">LAN 172.16.4.0/24</text>
+<g transform="translate(38,554) scale(0.6) translate(-38,-554)"><circle cx="38" cy="554" r="22" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M25,554 h9 M31,551 l3,3 l-3,3"/><path d="M51,554 h-9 M45,551 l-3,3 l3,3"/><path d="M38,550 v-9 M35,543 l3,-3 l3,3"/><path d="M38,558 v9 M35,565 l3,3 l3,-3"/></g></g>
+<text x="58.0" y="559.0" font-size="12" font-weight="normal" fill="#475569" text-anchor="start">router</text>
+<g transform="translate(150,554) scale(0.6) translate(-150,-554)"><rect x="124.0" y="538.0" width="52" height="32" rx="6" fill="#047857" stroke="#064e3b" stroke-width="1.5"/><g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M134,548 h30 M160,545 l4,3 l-4,3"/><path d="M166,560 h-30 M140,557 l-4,3 l4,3"/></g></g>
+<text x="170.0" y="559.0" font-size="12" font-weight="normal" fill="#475569" text-anchor="start">switch</text>
+<g transform="translate(262,554) scale(0.6) translate(-262,-554)"><rect x="242.0" y="536.0" width="40" height="28" rx="3" fill="#475569" stroke="#1e293b" stroke-width="1.5"/><rect x="246.0" y="540.0" width="32" height="20" fill="#e2e8f0"/><rect x="250" y="566.0" width="24" height="4" rx="1" fill="#1e293b"/></g>
+<text x="282.0" y="559.0" font-size="12" font-weight="normal" fill="#475569" text-anchor="start">host / PC</text>
+<text x="976.0" y="559.0" font-size="12" font-weight="normal" fill="#475569" text-anchor="end">Loopbacks 10.255.3.N/32 — management 192.168.100.0/24, netauto .10 (not shown)</text>
+</svg>

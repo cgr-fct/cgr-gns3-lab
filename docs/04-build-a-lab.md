@@ -79,6 +79,11 @@ Kinds: `frr` (router/switch, `role: router|switch` only changes the icon), `host
 data port `eth1`), `netauto`, `vpcs`, `switch` (plain GNS3 Ethernet switch), `nat`.
 Optional per node: `ports` (default 8), `mgmt`, `ip`/`gw` (hosts and PCs; `ip: dhcp` for a DHCP client).
 
+The lab figures (`labs/<lab>/figure.png`) are drawn from `labs/<lab>/figure.yml` with
+`python tools/draw_topology.py labs/<lab> --png` (the PNG needs `pip install playwright` and
+`playwright install chromium`; the SVG needs nothing). The tool also checks that every port shown
+in the figure is a link of `topology.yml`. Copy an existing `figure.yml` to start your own.
+
 **Coming from NVIDIA Air?** Export the simulation as JSON and convert it — same node and port names:
 
 ```bash

@@ -4,9 +4,9 @@
 election on a broadcast segment, default route origination.
 
 You configure the routing between the branches of an enterprise network with OSPF, as in the
-figure below (the figure uses Cisco interface names; the table maps them to the lab ports).
+figure below.
 
-![statement figure](statement-figure.png)
+![Lab 02 topology](figure.png)
 
 ## Build it
 
@@ -14,17 +14,17 @@ figure below (the figure uses Cisco interface names; the table maps them to the 
 python tools/cgr_lab.py build labs/lab02-ospf --start
 ```
 
-## Port mapping (figure → lab)
+## Links
 
-| Figure | Lab | Subnet | Area |
+| Link | Ports | Subnet | Area |
 |---|---|---|---|
-| R5 G0/1 — switch G0/0 | R5 **swp1** — SW **swp1** | 192.168.23.0/24 | 32 |
-| R4 G0/? — switch G0/2 | R4 **swp1** — SW **swp2** | 192.168.23.0/24 | 32 |
-| R1 G0/? — switch G0/1 | R1 **swp1** — SW **swp3** | 192.168.23.0/24 | 32 |
-| R1 G0/0 — R2 G0/0 | R1 **swp2** — R2 **swp1** | 192.168.34.0/24 | 0 |
-| R2 G0/1 — R3 G0/1 | R2 **swp2** — R3 **swp1** | 192.168.45.0/24 | 0 |
-| R5 G0/0 — R6 G0/0 | R5 **swp2** — R6 **swp1** | 192.168.13.0/24 | 43 |
-| R6 G0/0 — R7 G0/0 | R6 **swp2** — R7 **swp1** | 192.168.12.0/24 | 43 |
+| R5 — SW | R5 **swp1** — SW **swp1** | 192.168.23.0/24 | 32 |
+| R4 — SW | R4 **swp1** — SW **swp2** | 192.168.23.0/24 | 32 |
+| R1 — SW | R1 **swp1** — SW **swp3** | 192.168.23.0/24 | 32 |
+| R1 — R2 | R1 **swp2** — R2 **swp1** | 192.168.34.0/24 | 0 |
+| R2 — R3 | R2 **swp2** — R3 **swp1** | 192.168.45.0/24 | 0 |
+| R5 — R6 | R5 **swp2** — R6 **swp1** | 192.168.13.0/24 | 43 |
+| R6 — R7 | R6 **swp2** — R7 **swp1** | 192.168.12.0/24 | 43 |
 
 Suggested host part: router *Rn* uses `.n` on every subnet (e.g. R1 = 192.168.23.1, R5 = 192.168.23.5).
 
@@ -76,7 +76,7 @@ as `bridge-access 1` ports (see the cheat sheet).
 Notes:
 * Addresses on `lo` are advertised by OSPF as /32 routes. That does not change the
   summarisation task (the most specific prefix covering the four loopbacks); to advertise them
-  as /27 like on the Cisco figure, use dummy interfaces (see the note in the cheat sheet).
+  as /27, use dummy interfaces (see the note in the cheat sheet).
 * Verification from any router: `ping -I <source-address> <destination>`,
   `traceroute -s <source-address> <destination>`.
 

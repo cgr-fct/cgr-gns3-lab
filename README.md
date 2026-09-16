@@ -66,7 +66,7 @@ Ports are named `swp1`, `swp2`, … (`eth0` is management). See the [cheat sheet
 ```
 docs/          installation guides, overview, troubleshooting, instructor notes
 labs/          one folder per lab: README (tasks), topology.yml; CHEATSHEET.md
-tools/         cgr_lab.py (build/start/stop labs via the GNS3 API), air2gns3.py, lab_settings.yml
+tools/         cgr_lab.py (build/start/stop labs via the GNS3 API), draw_topology.py (lab figures), air2gns3.py, lab_settings.yml
 automation/    toolkit: YANG model, RESTCONF client+server, intent tool, templates, Ansible
                (copied into the netauto station /root/cgr and into every router/switch)
 images/        Dockerfiles for the router/switch and the netauto/host images

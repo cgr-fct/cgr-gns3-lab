@@ -1,0 +1,22 @@
+title: "Lab 04 — BGP: a bank and its provider"
+size: [1100, 830]
+note: "Management 192.168.200.0/24 — netauto .254 (not shown)"
+groups:
+  - {label: "Provider network\nAS 64600", x: 40, y: 60, w: 1020, h: 320, color: green, label_at: tr}
+  - {label: "Bank network\nAS 65500", x: 40, y: 420, w: 1020, h: 360, color: orange, label_at: bl}
+nodes:
+  R5: {type: router, x: 330, y: 150, label: above, stub: {dir: left, lines: ["lo 10.5.5.5/24", "172.16.0.1/22", "172.16.4.1/22", "172.16.8.1/22", "172.16.12.1/22"]}}
+  R6: {type: router, x: 770, y: 150, label: above, stub: {dir: right, lines: ["lo 10.6.6.6/24"]}}
+  R4: {type: router, x: 550, y: 315, label: left, stub: {dir: up, len: 26, lines: ["lo 10.4.4.4/24"]}}
+  R1: {type: router, x: 330, y: 520, label: above, stub: {dir: left, lines: ["lo 10.1.1.1/24"]}}
+  R3: {type: router, x: 770, y: 520, label: above, stub: {dir: right, lines: ["lo 10.3.3.3/24"]}}
+  R2: {type: router, x: 550, y: 690, label: left, stub: {dir: down, len: 22, lines: ["lo 10.2.2.2/24,  10.20.0.1/24,  10.20.1.1/24", "10.20.2.1/24,  10.20.3.1/24"]}}
+links:
+  - {a: R5, b: R6, pa: "swp1 .5", pb: "swp1 .6", net: 10.1.56.0/29, shift: [0, -16], pdist: 40, side: -1}
+  - {a: R4, b: R5, pa: "swp2 .4", pb: "swp2 .5", net: 10.1.45.0/29, shift: [-44, 0], side: -1}
+  - {a: R4, b: R6, pa: "swp4 .4", pb: "swp4 .6", net: 10.1.46.0/29, shift: [44, 0]}
+  - {a: R4, b: R1, pa: "swp1 .2", pb: "swp1 .1", net: 192.168.14.0/30, at: 0.4, shift: [-52, 0], side: -1}
+  - {a: R4, b: R3, pa: "swp3 .2", pb: "swp3 .1", net: 192.168.34.0/30, at: 0.4, shift: [52, 0]}
+  - {a: R1, b: R3, pa: "swp3 .1", pb: "swp1 .3", net: 10.1.103.0/29, shift: [0, -16], pdist: 60, side: -1}
+  - {a: R1, b: R2, pa: "swp2 .1", pb: "swp2 .2", net: 10.1.102.0/29, shift: [-44, 0], side: -1}
+  - {a: R2, b: R3, pa: "swp4 .2", pb: "swp4 .3", net: 10.1.203.0/29, shift: [44, 0]}

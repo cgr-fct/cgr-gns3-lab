@@ -5,16 +5,7 @@ metrics (wide), comparison with OSPF.
 
 **Nodes:** 4 routers, 3 PCs, netauto. Syntax: [cheat sheet](../CHEATSHEET.md).
 
-```mermaid
-graph TB
-  pc1["pc1 172.16.1.10"] --- |swp3| r1["r1 · lo 10.255.3.1"]
-  r1 --- |"swp1 10.3.12.0/30 swp1"| r2["r2 · lo 10.255.3.2"]
-  r1 --- |"swp2 10.3.13.0/30 swp1"| r3["r3 · lo 10.255.3.3"]
-  r2 --- |"swp2 10.3.24.0/30 swp1"| r4["r4 · lo 10.255.3.4"]
-  r3 --- |"swp2 10.3.34.0/30 swp2"| r4
-  r3 --- |swp3| pc3["pc3 172.16.3.10"]
-  r4 --- |swp3| pc4["pc4 172.16.4.10"]
-```
+![Lab 03 topology](figure.png)
 
 | Link / LAN | Subnet | Addresses |
 |---|---|---|

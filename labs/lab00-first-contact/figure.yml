@@ -1,0 +1,14 @@
+title: "Lab 00 — First contact"
+size: [900, 470]
+note: "Management 192.168.100.0/24 — netauto .10 (not shown)"
+groups:
+  - {label: "VLAN 10", x: 180, y: 80, w: 540, h: 330, color: teal, label_at: tr}
+nodes:
+  sw1: {type: switch, x: 300, y: 170, label: above, sub: "mgmt 192.168.100.11"}
+  sw2: {type: switch, x: 600, y: 170, label: above, sub: "mgmt 192.168.100.12"}
+  pc1: {type: host, x: 300, y: 330, label: below, sub: "10.0.0.1/24"}
+  pc2: {type: host, x: 600, y: 330, label: below, sub: "10.0.0.2/24"}
+links:
+  - {a: sw1, b: sw2, pa: "swp1", pb: "swp1", net: "trunk (VLAN 10 tagged)", shift: [0, -16], pdist: 30, side: 1}
+  - {a: sw1, b: pc1, pa: "swp2", pb: "e0", net: "access VLAN 10", shift: [-62, 0], side: -1}
+  - {a: sw2, b: pc2, pa: "swp2", pb: "e0", net: "access VLAN 10", shift: [62, 0]}

@@ -1,0 +1,44 @@
+title: "Lab 01 — Enterprise campus network"
+size: [1100, 980]
+note: "Double line = two cables (bundle them)  ·  user hosts use DHCP  ·  management 192.168.200.0/24 (not shown)"
+groups:
+  - {label: "Datacenter", x: 40, y: 60, w: 400, h: 150, color: grey, label_at: tl}
+  - {label: "Internet", x: 660, y: 60, w: 400, h: 150, color: red, label_at: tr}
+  - {label: "Core", x: 200, y: 240, w: 700, h: 130, color: blue, label_at: tl}
+  - {label: "Access pod", x: 40, y: 400, w: 1020, h: 530, color: green, label_at: tl}
+nodes:
+  Ubuntu-Server-5: {type: host, x: 120, y: 125, label: below, sub: "server (eth1)"}
+  DatacenterRack: {type: switch, x: 330, y: 135, label: above}
+  BorderRouter: {type: router, x: 790, y: 135, label: above}
+  UbuntuInternet: {type: host, x: 980, y: 125, label: below, sub: "Internet host (eth1)"}
+  SpineRouter1: {type: router, x: 380, y: 305, label: left}
+  SpineRouter2: {type: router, x: 720, y: 305, label: right}
+  Distribution1: {type: switch, x: 380, y: 500, label: left}
+  Distribution2: {type: switch, x: 720, y: 500, label: right}
+  Access1: {type: switch, x: 380, y: 720, label: left}
+  Access2: {type: switch, x: 720, y: 720, label: right}
+  UserUbuntu1: {type: host, x: 250, y: 870, label: below}
+  UserUbuntu2: {type: host, x: 470, y: 870, label: below}
+  UserUbuntu3: {type: host, x: 630, y: 870, label: below}
+  UserUbuntu4: {type: host, x: 850, y: 870, label: below}
+links:
+  - {a: DatacenterRack, b: Ubuntu-Server-5, pa: "swp1", pb: "eth1", pdist: 30}
+  - {a: BorderRouter, b: UbuntuInternet, pa: "swp5", pb: "eth1", pdist: 30}
+  - {a: DatacenterRack, b: SpineRouter1, pa: "swp5-6", pb: "swp5-6", double: true, pdist: 34}
+  - {a: DatacenterRack, b: SpineRouter2, pa: "swp10-11", pb: "swp11-12", double: true, pdist: 60, side: -1, pa_shift: [6, 0], pb_shift: [-8, 0]}
+  - {a: BorderRouter, b: SpineRouter1, pa: "swp1-2", pb: "swp3-4", double: true, pdist: 60, side: -1, pb_shift: [8, 0]}
+  - {a: BorderRouter, b: SpineRouter2, pa: "swp3-4", pb: "swp3-4", double: true, pdist: 34, side: -1}
+  - {a: SpineRouter1, b: SpineRouter2, pa: "swp1-2", pb: "swp1-2", double: true, pdist: 100, side: 1}
+  - {a: Distribution1, b: SpineRouter1, pa: "swp7-8", pb: "swp7-8", double: true, pdist: 30}
+  - {a: Distribution2, b: SpineRouter2, pa: "swp7-8", pb: "swp7-8", double: true, pdist: 30, side: -1}
+  - {a: Distribution1, b: SpineRouter2, pa: "swp9-10", pb: "swp9-10", double: true, pdist: 60, side: -1}
+  - {a: Distribution2, b: SpineRouter1, pa: "swp9-10", pb: "swp9-10", double: true, pdist: 60}
+  - {a: Distribution1, b: Distribution2, pa: "swp5-6", pb: "swp5-6", double: true, pdist: 40, side: 1}
+  - {a: Access1, b: Distribution1, pa: "swp1-2", pb: "swp1-2", double: true, pdist: 30, side: -1}
+  - {a: Access2, b: Distribution2, pa: "swp1-2", pb: "swp1-2", double: true, pdist: 30}
+  - {a: Access1, b: Distribution2, pa: "swp3-4", pb: "swp3-4", double: true, pdist: 60}
+  - {a: Access2, b: Distribution1, pa: "swp3-4", pb: "swp3-4", double: true, pdist: 60, side: -1}
+  - {a: Access1, b: UserUbuntu1, pa: "swp5", pb: "eth1", pdist: 24, side: -1}
+  - {a: Access1, b: UserUbuntu2, pa: "swp6", pb: "eth1", pdist: 24}
+  - {a: Access2, b: UserUbuntu3, pa: "swp5", pb: "eth1", pdist: 24, side: -1}
+  - {a: Access2, b: UserUbuntu4, pa: "swp6", pb: "eth1", pdist: 24}

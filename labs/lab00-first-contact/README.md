@@ -4,15 +4,9 @@
 management network works, a VLAN carries traffic between two PCs, and you can configure a
 switch from the automation station — with a YAML file over SSH and with RESTCONF. Do this lab in the first class**.
 
-```mermaid
-graph LR
-  pc1["pc1<br/>10.0.0.1/24"] --- |swp2| sw1
-  sw1 --- |"swp1 — swp1<br/>trunk"| sw2
-  sw2 --- |swp2| pc2["pc2<br/>10.0.0.2/24"]
-  netauto["netauto<br/>192.168.100.10"] -.- mgmt((mgmt-sw))
-  mgmt -.- |eth0 .11| sw1
-  mgmt -.- |eth0 .12| sw2
-```
+![Lab 00 topology](figure.png)
+
+Management network 192.168.100.0/24: netauto .10, sw1 .11, sw2 .12 (all on `eth0`).
 
 ## 1. Build and start
 

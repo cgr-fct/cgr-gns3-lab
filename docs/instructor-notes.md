@@ -74,7 +74,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -f images/netauto/Dockerf
 |---|---|---|
 | 00 first contact | new | bridge/VLAN by hand, YAML intent, first RESTCONF requests |
 | 01 campus | 2025/2026 project 1, part 1 (Air *ProjectCampusNetwork* topology) | + DHCP server/relay (user hosts are DHCP clients), OSPF **or** IS-IS, automation part |
-| 02 OSPF | 2025/2026 project 1, part 2 (figure redrawn; port mapping in the README) | the "hidden issue" is area 43 not touching area 0 → virtual link R1–R5 through area 32 |
+| 02 OSPF | 2025/2026 project 1, part 2 (figure redrawn with the lab port names) | the "hidden issue" is area 43 not touching area 0 → virtual link R1–R5 through area 32 |
 | 03 IS-IS | new | 4 routers |
 | 04 BGP | 2025/2026 lab 2, part 1 (Air *BGP* topology) | the statement's 10.1.405/406/506.0/29 are invalid → 10.1.45/46/56.0/29; R4 loopback 10.4.4.4/24 added; the Air file lacked the R1–R3 link (added) |
 
@@ -136,6 +136,12 @@ redistributed routes).
 - [ ] GHCR publishing and the first image pull from the GNS3 VM.
 - [ ] GNS3 "Reload" of a node left it waiting for its interfaces in the test environment;
       stop/start works (documented in troubleshooting).
+
+## Lab figures
+All lab figures use one style and are generated: `labs/<lab>/figure.yml` → `python tools/draw_topology.py --all --png`
+→ `figure.svg` + `figure.png`. The tool fails if a port written in a figure is not a link of the
+lab's `topology.yml`. Re-run it after changing a topology or its addressing (and copy the Lab 01/02
+PNGs to the course site: `img/project1_campus.png`, `img/project1_ospf.png`).
 
 ## Ideas for more labs
 BFD, route reflectors (cheap to scale), EVPN-VXLAN with FRR, IPv6 (OSPFv3 is enabled),
