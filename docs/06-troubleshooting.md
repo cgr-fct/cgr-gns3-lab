@@ -5,9 +5,8 @@ GNS3 must be open. Check *Edit → Preferences → Server* and pass
 `--server http://127.0.0.1:3080 --user <user> --password <password>`.
 
 ### VirtualBox: the GNS3 VM does not start
-* *"must have a network adapter attached to a host-only …"*: in VirtualBox *Tools → Network
-  Manager* create a host-only network (Windows: with *DHCP Server* enabled) and attach **Adapter 1**
-  of the GNS3 VM to it; **Adapter 2** must be NAT.
+* *"must have a network adapter attached to a host-only …"*: create a host-only network with the
+  `VBoxManage` commands in the install guide and attach **Adapter 1** of the GNS3 VM to it; **Adapter 2** must be NAT.
 * An error about **nested virtualisation / VT-x / AMD-V** (Windows): GNS3 turns nested
   virtualisation on at every start and VirtualBox may refuse it while Hyper-V is active. Either
   turn Hyper-V off (*Windows Features*: untick *Hyper-V*, *Virtual Machine Platform* and

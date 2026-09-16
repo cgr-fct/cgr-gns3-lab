@@ -80,8 +80,15 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
 1. Download VirtualBox from <https://www.virtualbox.org/wiki/Downloads>:
    **macOS / Apple Silicon hosts** (M chips — version **7.2 or newer**) or **macOS / Intel hosts**.
    Install it and allow the system extension if macOS asks (*System Settings → Privacy & Security*).
-2. VirtualBox → *File → Tools → Network Manager* → tab **Host-only Networks** → **Create**.
-   Keep the defaults (it is usually called *HostNetwork*, 192.168.56.x) → Apply.
+2. Create the host-only network the GNS3 VM will use. Do it in **Terminal** (VirtualBox itself
+   does not need to be open, and no VM needs to exist yet):
+   ```bash
+   VBoxManage hostonlynet add --name=HostNetwork --netmask=255.255.255.0 \
+       --lower-ip=192.168.56.100 --upper-ip=192.168.56.199 --enable
+   VBoxManage list hostonlynets          # HostNetwork must be listed
+   ```
+   If Terminal answers `command not found`, use the full path
+   `/Applications/VirtualBox.app/Contents/MacOS/VBoxManage` instead of `VBoxManage`.
 
 **Create the GNS3 VM — Apple Silicon:**
 
@@ -94,7 +101,8 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
 4. Select the VM → *Settings*:
    * **Storage**: on the controller that holds `gns3vm-disk1.vmdk`, click the *add hard disk* icon →
      *Add* → `gns3vm-disk2.vmdk` → Choose. (disk1 must stay first.)
-   * **Network → Adapter 1**: *Attached to* **Host-only Network**, name *HostNetwork*.
+   * **Network → Adapter 1**: *Attached to* **Host-only Network**, name *HostNetwork* (the one
+     created in step 2; if the name list is empty, step 2 was not done).
    * **Network → Adapter 2**: tick *Enable*, *Attached to* **NAT** (Internet access for the VM).
    * OK.
 

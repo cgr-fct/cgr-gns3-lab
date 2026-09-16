@@ -62,9 +62,12 @@ version works). It is only distributed through the Broadcom support portal:
    <https://www.virtualbox.org/wiki/Downloads> and install it with the defaults. If the installer
    asks for the *Microsoft Visual C++ Redistributable* or *Python*, accept or skip — neither is
    needed for GNS3.
-2. Open VirtualBox → *File → Tools → Network Manager* → tab **Host-only Networks**. There should
-   be a *VirtualBox Host-Only Ethernet Adapter* with **DHCP Server: Enabled**. If the list is
-   empty, click **Create**, then tick *Enable Server* in the *DHCP Server* tab and **Apply**.
+2. Check that VirtualBox created a host-only adapter during installation. In PowerShell:
+   ```powershell
+   & "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" list hostonlyifs      # must list one adapter
+   & "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" hostonlyif create      # only if the list is empty
+   ```
+   (GNS3 enables the DHCP server on it by itself when it starts the VM.)
 3. Unzip `GNS3.VM.VirtualBox.2.2.54.zip` → in VirtualBox *File → Import Appliance* → select
    `GNS3 VM.ova` → *Finish*. The VM is called **GNS3 VM**. Don't start it.
 4. Start **GNS3**. In the *Setup Wizard*:
