@@ -119,6 +119,10 @@ double-click the `.ova` → Fusion imports it as **GNS3 VM**. Don't start it.
 5. Start GNS3 → *Setup Wizard* → **Run appliances on my local computer** → keep the proposed
    settings (host `127.0.0.1`, port `3080`) → Finish. Ignore warnings about missing local
    emulators.
+   (Not *Run appliances in a virtual machine*: that option only works with VMware or VirtualBox,
+   which GNS3 starts and stops itself. With UTM, GNS3 keeps its small local server on the Mac —
+   the one the GUI and `cgr_lab.py` talk to — and the devices run in the UTM VM, which you add in
+   the next step.)
 6. *GNS3 → Preferences → Server* → tab **Remote servers** → **Add**: protocol **HTTP**, host = the
    VM address from step 4, port **80**, no authentication → OK → **Apply**.
    The new server appears in the *Servers Summary* panel and must be green.
