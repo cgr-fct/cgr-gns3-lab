@@ -10,7 +10,10 @@ GNS3 must be open. Check *Edit → Preferences → Server* and pass
 * An error about **nested virtualisation / VT-x / AMD-V** (Windows): GNS3 turns nested
   virtualisation on at every start and VirtualBox may refuse it while Hyper-V is active. Either
   turn Hyper-V off (*Windows Features*: untick *Hyper-V*, *Virtual Machine Platform* and
-  *Windows Hypervisor Platform*, reboot — this disables WSL2/Docker Desktop), or use VMware.
+  *Windows Hypervisor Platform*, reboot — this disables WSL2/Docker Desktop), or use VMware, or
+  install an Ubuntu VM and work inside it
+  ([Windows guide, option C](01-install-windows.md#2c-option-c--everything-inside-a-linux-vm)) —
+  that VM needs no nested virtualisation.
 * **Apple Silicon Mac:** VirtualBox cannot run the GNS3 VM (the firmware starts, the system
   does not boot, the screen stays blank). Use VMware Fusion or UTM (install guide, options A/B).
 

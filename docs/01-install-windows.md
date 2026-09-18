@@ -5,15 +5,16 @@ Time: ~30 min, mostly downloads. Needs ~10 GB free disk and 8 GB RAM (16 GB is c
 > **Use exactly GNS3 version `2.2.54`** for the GUI *and* the GNS3 VM — the whole class uses
 > the same version, and the GUI and the VM must always match.
 
-The routers and switches run inside the **GNS3 VM**, a small Linux virtual machine. You can run
-it with either hypervisor — pick **one**:
+The routers and switches always run inside a virtual machine. You have three ways to get there —
+pick **one**:
 
-| | Option A — VMware Workstation Pro | Option B — VirtualBox |
-|---|---|---|
-| Cost | free | free (open source) |
-| Download | Broadcom portal, needs an account that Broadcom must approve (can take days) | direct download, no account |
-| GNS3 support | recommended by GNS3, the most tested | supported by GNS3 |
-| Tested with this kit | the GNS3 VM with VMware is the reference setup | not tested on Windows by us |
+| | Option A — VMware Workstation Pro | Option B — VirtualBox | Option C — Linux VM |
+|---|---|---|---|
+| What runs on Windows | GNS3 GUI | GNS3 GUI | nothing — everything is inside the VM |
+| Which VM | the ready-made **GNS3 VM** appliance | the ready-made **GNS3 VM** appliance | an **Ubuntu Desktop** VM you install yourself |
+| Cost / download | free; Broadcom account that must be approved (can take days) | free, direct download, no account | free (VirtualBox or Hyper-V) + Ubuntu ISO |
+| Good when | you want the reference setup | you want to avoid the Broadcom account | Hyper-V / WSL2 / Docker Desktop get in the way, or the GNS3 VM refuses to start |
+| Tested with this kit | reference setup | not tested on Windows by us | the Linux install is the one we develop the labs on |
 
 If you are not sure, start the Broadcom registration now (section 2A, step 1) and, if it is not approved in
 time, use VirtualBox. You can switch later: your labs live in GNS3 projects, not in the VM.
@@ -22,6 +23,8 @@ You do **not** need to change any Windows virtualisation settings for VMware: th
 containers, so VMware works fine next to Hyper-V, WSL2 or Docker Desktop.
 
 ## 1. Download GNS3
+
+*(Option C does not need these downloads — go straight to section 2C.)*
 
 From <https://github.com/GNS3/gns3-gui/releases/tag/v2.2.54> download:
 
@@ -56,6 +59,8 @@ version works). It is only distributed through the Broadcom support portal:
      have 16 GB) → Finish.
 6. GNS3 starts the VM. In the *Servers Summary* panel (right side) **GNS3 VM** must turn green.
 
+Continue with section 3.
+
 ## 2B. Option B — VirtualBox
 
 1. Download **VirtualBox for Windows hosts** (7.1 or newer) from
@@ -87,7 +92,40 @@ VirtualBox notes:
   with an error that mentions nested virtualisation / VT-x / AMD-V, see
   [troubleshooting](06-troubleshooting.md#virtualbox-the-gns3-vm-does-not-start).
 
+Continue with section 3.
+
+## 2C. Option C — everything inside a Linux VM
+
+Instead of the GNS3 VM appliance, install a normal **Ubuntu Desktop** VM and run GNS3, Docker and
+the lab tools *inside* it. Windows only hosts the VM. This avoids the whole nested-virtualisation
+question: the lab devices are Docker containers, and containers do not need VT-x inside the VM —
+so the VM starts even with Hyper-V, WSL2 or Docker Desktop active on Windows.
+
+1. Download **Ubuntu Desktop 24.04 LTS** (the `.iso`) from <https://ubuntu.com/download/desktop>.
+2. Create the VM, with VirtualBox (<https://www.virtualbox.org/wiki/Downloads>) or with
+   VMware Workstation Pro — whichever you already have:
+   * **4096 MB RAM** (6144 MB if your PC has 16 GB), **2 CPUs**, **40 GB disk**
+   * network: the default (**NAT**) — the VM needs Internet access to download the lab images
+   * VirtualBox only: *Display → Video Memory* **128 MB**, and after installing Ubuntu insert the
+     *Guest Additions CD* (*Devices* menu) so the window resizes properly.
+3. Boot the VM from the ISO and install Ubuntu normally (*Minimal installation* is enough).
+   Remember the user name and password; this is the machine you will work on all semester.
+4. Inside the VM, follow **[Install on Linux](03-install-linux.md)** — section 1A (Ubuntu) and
+   section 2. Then continue with [Building a lab](04-build-a-lab.md) inside the VM too.
+   You do **not** need sections 1 and 3 of this Windows guide.
+
+Notes:
+* Everything — GNS3, the projects, the repository — lives inside the VM. To move a file to
+  Windows, use a *Shared Folder* (VirtualBox: *Devices → Shared Folders*, tick *Auto-mount*) or
+  copy it through GitHub.
+* Give the VM a snapshot once the installation works (VirtualBox: *Machine → Take Snapshot*), so
+  you can go back if an experiment breaks the system.
+* Hyper-V users: *Hyper-V Manager → Quick Create → Ubuntu* creates the same kind of VM in one
+  step; use *Enhanced session* for a full-screen desktop.
+
 ## 3. Python and the lab tools
+
+*(Options A and B only — with option C these tools are installed inside the Linux VM.)*
 
 Open **Terminal** (PowerShell):
 

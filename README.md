@@ -24,6 +24,9 @@ python tools/cgr_lab.py build labs/lab01-campus --start
 | 4. Check | `py tools\cgr_lab.py check` | `python tools/cgr_lab.py check` | same |
 | 5. First lab | [Lab 00](labs/lab00-first-contact/README.md) | same | same |
 
+On Windows you can also install everything inside an Ubuntu VM and follow the Linux guide there —
+[Windows guide, option C](docs/01-install-windows.md#2c-option-c--everything-inside-a-linux-vm).
+
 Stuck? → [Troubleshooting](docs/06-troubleshooting.md). How it fits together →
 [Overview](docs/00-overview.md). Configuration syntax → [Cheat sheet](labs/CHEATSHEET.md).
 
