@@ -11,6 +11,8 @@ Keep the GNS3 GUI open while you use it.
   python tools/cgr_lab.py consoles lab00-first-contact
   python tools/cgr_lab.py stop lab00-first-contact
   python tools/cgr_lab.py delete lab00-first-contact
+  python tools/cgr_lab.py fetch lab05-evpn          # netauto:/root/delivery.tgz -> delivery-lab05-evpn.tgz
+  python tools/cgr_lab.py exec lab05-evpn h1 "ping -c 3 192.168.10.13"   # run a command via the console
 
 Connection settings (first match wins):
   1. --server / --user / --password options
@@ -129,6 +131,7 @@ class GNS3:
     def _req(self, method, path, **kw):
         url = self.base + path
         try:
+            raw = kw.pop("raw", False)
             r = self.s.request(method, url, timeout=kw.pop("timeout", 60), **kw)
         except requests.ConnectionError:
             die(f"Cannot reach the GNS3 server at {self.base}. Is the GNS3 GUI open? "
@@ -142,6 +145,8 @@ class GNS3:
             except ValueError:
                 msg = r.text
             raise RuntimeError(f"{method} {path} -> {r.status_code}: {msg}")
+        if raw:
+            return r.content
         if r.content and "json" in r.headers.get("Content-Type", ""):
             return r.json()
         return r.text
@@ -508,7 +513,7 @@ def cmd_delete(api, args, settings, quiet=False):
     if not p:
         die(f"No project '{args.project}'")
     try:
-        api.post(f"/projects/{p['project_id']}/close")
+        api.post(f"/projects/{p['project_id']}/close", timeout=600)
     except RuntimeError:
         pass
     api.delete(f"/projects/{p['project_id']}")
@@ -537,6 +542,92 @@ def cmd_consoles(api, args, settings):
             print(f"  {n['name']:<12} {n['status']:<8} telnet {console_host_for(n, args.server_url)} {n['console']}")
 
 
+def console_run(host, port, command, timeout=30):
+    """Run a shell command on a node through its GNS3 telnet console; return (rc, output)."""
+    import socket
+    import time
+    tag = f"cgr{int(time.time() * 1000) % 100000}"
+    sock = socket.create_connection((host, int(port)), timeout=timeout)
+    buf = b""
+
+    def read_until(marker, limit):
+        nonlocal buf
+        end = time.time() + limit
+        while marker not in buf and time.time() < end:
+            try:
+                chunk = sock.recv(65536)
+            except socket.timeout:
+                break
+            if not chunk:
+                break
+            # answer telnet option negotiation with "won't/don't"
+            i = 0
+            while i < len(chunk):
+                if chunk[i] == 255 and i + 2 < len(chunk) and chunk[i + 1] in (251, 252, 253, 254):
+                    reply = 254 if chunk[i + 1] in (251, 252) else 252
+                    sock.sendall(bytes([255, reply, chunk[i + 2]]))
+                    i += 3
+                    continue
+                buf += bytes([chunk[i]])
+                i += 1
+        return marker in buf
+
+    sock.sendall(b"\r\n")
+    time.sleep(0.5)
+    sock.sendall(f"stty -echo 2>/dev/null; echo {tag}S; ( {command} ) 2>&1; echo {tag}E$?\r\n".encode())
+    read_until(f"{tag}S\r\n".encode(), 10) or read_until(f"{tag}S\n".encode(), 2)
+    start = buf.rfind(f"{tag}S".encode())
+    buf = buf[start:]
+    ok_ = read_until(f"{tag}E".encode(), timeout) and read_until(b"\n", 2)
+    sock.sendall(b"stty echo 2>/dev/null\r\n")
+    sock.close()
+    text = buf.decode(errors="replace").replace("\r", "")
+    text = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]", "", text)
+    body = text.split(f"{tag}S", 1)[-1].lstrip("\n")
+    m = re.search(f"{tag}E(\\d+)", body)
+    out = body[:m.start()] if m else body
+    return (int(m.group(1)) if m else None), out.rstrip("\n")
+
+
+def cmd_exec(api, args, settings):
+    """Run a command on lab nodes through their consoles (no SSH/management network needed)."""
+    _, nodes = project_nodes(api, args.project)
+    names = args.nodes.split(",")
+    rc_all = 0
+    for name in names:
+        n = next((x for x in nodes if x["name"] == name), None)
+        if not n:
+            die(f"No node '{name}' in {args.project}")
+        if n.get("status") != "started" or not n.get("console"):
+            die(f"{name} is not running")
+        rc, out = console_run(console_host_for(n, args.server_url), n["console"], args.command, args.timeout)
+        if len(names) > 1:
+            print(f"--- {name} (exit {rc})")
+        print(out)
+        rc_all = rc_all or (1 if rc is None else rc)
+    sys.exit(rc_all)
+
+
+def cmd_fetch(api, args, settings):
+    """Download a file from a node of a lab (default: netauto's /root/delivery.tgz)."""
+    p, nodes = project_nodes(api, args.project)
+    node = next((n for n in nodes if n["name"] == args.node), None) or \
+        die(f"No node '{args.node}' in {args.project}")
+    path = args.path.lstrip("/")
+    try:
+        data = api.get(f"/projects/{p['project_id']}/nodes/{node['node_id']}/files/{path}", raw=True)
+    except RuntimeError as e:
+        if "404" in str(e):
+            die(f"{args.node} has no /{path}. On {args.node} run ./deliver.py first.")
+        raise
+    out = Path(args.output or f"delivery-{args.project}.tgz")
+    if out.suffix in (".tgz", ".gz") and not data.startswith(b"\x1f\x8b"):
+        import gzip   # the GNS3 server sends .tgz files gzip-encoded; requests already unpacked them
+        data = gzip.compress(data)
+    out.write_bytes(data)
+    ok(f"{args.node}:/{path} -> {out.resolve()} ({len(data)} bytes)")
+
+
 # --------------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description="Build and manage CGR GNS3 labs")
@@ -555,6 +646,16 @@ def main():
     for c in ("start", "stop", "delete", "consoles"):
         s = sub.add_parser(c, help=f"{c} a lab project")
         s.add_argument("project")
+    s = sub.add_parser("exec", help="run a shell command on node(s) through the console")
+    s.add_argument("project")
+    s.add_argument("nodes", help="node name, or several separated by commas")
+    s.add_argument("command")
+    s.add_argument("--timeout", type=int, default=30)
+    s = sub.add_parser("fetch", help="copy a file out of a lab node (default: netauto's delivery)")
+    s.add_argument("project")
+    s.add_argument("--node", default="netauto")
+    s.add_argument("--path", default="/root/delivery.tgz", help="file on the node (persistent folders only, e.g. /root)")
+    s.add_argument("-o", "--output", help="local file (default: delivery-<project>.tgz)")
     args = ap.parse_args()
 
     settings = load_settings()
@@ -563,7 +664,7 @@ def main():
     api = GNS3(server, user, password)
     handlers = {"check": cmd_check, "templates": cmd_templates,
                 "build": cmd_build, "start": cmd_start, "stop": cmd_stop, "delete": cmd_delete,
-                "consoles": cmd_consoles}
+                "consoles": cmd_consoles, "fetch": cmd_fetch, "exec": cmd_exec}
     try:
         handlers[args.cmd](api, args, settings)
     except RuntimeError as e:

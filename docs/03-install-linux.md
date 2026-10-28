@@ -17,8 +17,8 @@ sudo apt update
 sudo apt install -y gns3-gui gns3-server        # answer "Yes" to "non-root users capture packets"
 sudo apt install -y docker.io python3-venv git
 for g in ubridge wireshark docker; do sudo usermod -aG $g "$USER"; done
-sudo modprobe -a bonding 8021q dummy macvlan    # kernel features used by the labs
-echo -e "bonding\n8021q\ndummy\nmacvlan" | sudo tee /etc/modules-load.d/cgr.conf
+sudo modprobe -a bonding 8021q dummy macvlan vxlan vrf    # kernel features used by the labs
+echo -e "bonding\n8021q\ndummy\nmacvlan\nvxlan\nvrf" | sudo tee /etc/modules-load.d/cgr.conf
 ```
 
 **Log out and back in** (group membership), then start GNS3 and in the *Setup Wizard* choose
@@ -70,8 +70,8 @@ cd ~
 ```bash
 sudo usermod -aG docker "$USER"
 sudo systemctl enable --now docker
-sudo modprobe -a bonding 8021q dummy macvlan    # kernel features used by the labs
-echo -e "bonding\n8021q\ndummy\nmacvlan" | sudo tee /etc/modules-load.d/cgr.conf
+sudo modprobe -a bonding 8021q dummy macvlan vxlan vrf    # kernel features used by the labs
+echo -e "bonding\n8021q\ndummy\nmacvlan\nvxlan\nvrf" | sudo tee /etc/modules-load.d/cgr.conf
 ```
 
 **Log out and back in** (group membership), then start GNS3 with `gns3` and in the *Setup Wizard*

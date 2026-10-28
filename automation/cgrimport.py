@@ -26,6 +26,11 @@ IGNORED_FRR = ("frr version", "frr defaults", "log ", "service integrated-vtysh-
                "hostname", "Building configuration", "Current configuration", "end", "!",
                "line vty", "exit", "agentx", "no ipv6 forwarding", "ipv6 forwarding",
                "ip forwarding", "password", "enable password")
+# lines that FRR itself writes inside a block (not configuration made by the user)
+IGNORED_FRR_SUB = ("use-underlays-nexthop-weight",     # FRR 10.x, in every 'router bgp'
+                   "no bgp deterministic-med",         # shown after frr-reload re-creates an
+                   "bgp deterministic-med")            # instance (profile default, not user config)
+
 DEFAULT_ENI = {("bridge-pvid", "1"), ("bridge-stp", "on"), ("bridge-stp", "yes"),
                ("bond-miimon", "100"), ("bond-lacp-rate", "fast"), ("bond-lacp-rate", "1"),
                ("bond-mode", "802.3ad")}
@@ -134,6 +139,8 @@ def parse_frr(text):
             else:
                 top = None
                 items.append(((), s))
+            continue
+        if s.startswith(IGNORED_FRR_SUB):
             continue
         if top == ("line vty",) or top is None:
             continue

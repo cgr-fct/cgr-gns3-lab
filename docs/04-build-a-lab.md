@@ -54,6 +54,11 @@ they are `swp1`, `swp2`, … (the cable on `eth5` is `swp5`). `eth0` is always m
 * **Stop** the project before shutting down your computer, and close GNS3 normally.
 * To hand in configurations, use `./collect.py all` on the netauto station (one text file per
   device) or **File → Export portable project** in GNS3.
+* To hand in **files you wrote on netauto** (2nd project): on netauto `./deliver.py lab04` (or
+  `lab05`) packs them into `/root/delivery.tgz`; on your computer
+  `python tools/cgr_lab.py fetch lab04-bgp` copies it out as `delivery-lab04-bgp.tgz`.
+* `python tools/cgr_lab.py exec <lab> <node> "<command>"` runs a command on a node through its
+  console (e.g. `exec lab05-evpn h1 "ping -c 3 192.168.10.13"`); several nodes: `h1,h2,h3`.
 
 ## Writing your own topology
 

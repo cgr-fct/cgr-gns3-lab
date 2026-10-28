@@ -61,9 +61,10 @@ NAT network adapter in VMware). Check that the image names in `tools/lab_setting
 ones your instructor published. To download them in advance: GNS3 VM console → *Shell* →
 `docker pull <image>` for both images.
 
-### Bonds or VLANs fail with "Operation not supported" / "Unknown device type"
+### Bonds, VLANs, VXLAN or VRFs fail with "Operation not supported" / "Unknown device type"
 The kernel modules are not loaded in the GNS3 VM (or on your Linux machine). GNS3 VM console →
-*Shell* (Linux: a terminal) → `sudo modprobe -a bonding 8021q dummy macvlan`, then `ifreload -a` again.
+*Shell* (Linux: a terminal) → `sudo modprobe -a bonding 8021q dummy macvlan vxlan vrf`, then `ifreload -a`
+again (Lab 05: `./deploy.py` again).
 
 ### `ifreload -a` prints errors
 Read the message — it names the interface and the option. Typical causes: option lines not
