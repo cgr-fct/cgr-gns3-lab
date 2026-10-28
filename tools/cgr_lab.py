@@ -609,6 +609,38 @@ def cmd_exec(api, args, settings):
     sys.exit(rc_all)
 
 
+def node_file_access(api, p, node, server_url, action):
+    """Run a file transfer to/from a node. A running Docker node's files belong to root, and the
+    GNS3 server (user gns3 in the GNS3 VM) gets 403 on them; GNS3 gives them back to its own user
+    when the node stops. So on 403: stop the node, retry, start it again and wait for its console."""
+    import time
+    try:
+        return action()
+    except RuntimeError as e:
+        if "-> 403" not in str(e):
+            raise
+    pid, nid, name = p["project_id"], node["node_id"], node["name"]
+    was_started = node.get("status") == "started"
+    print(f"  {name}'s files are in use by its container: stopping {name} for a moment...", flush=True)
+    api.post(f"/projects/{pid}/nodes/{nid}/stop", timeout=300)
+    try:
+        return action()
+    finally:
+        if was_started:
+            n = api.post(f"/projects/{pid}/nodes/{nid}/start", timeout=300) or {}
+            console = (n.get("console") if isinstance(n, dict) else None) or node.get("console")
+            end = time.time() + 90
+            while console and time.time() < end:
+                try:
+                    rc, _ = console_run(console_host_for(node, server_url), console, "true", 5)
+                    if rc == 0:
+                        break
+                except OSError:
+                    pass
+                time.sleep(2)
+            print(f"  {name} started again", flush=True)
+
+
 def cmd_fetch(api, args, settings):
     """Download a file from a node of a lab (default: netauto's /root/delivery.tgz)."""
     p, nodes = project_nodes(api, args.project)
@@ -616,7 +648,8 @@ def cmd_fetch(api, args, settings):
         die(f"No node '{args.node}' in {args.project}")
     path = args.path.lstrip("/")
     try:
-        data = api.get(f"/projects/{p['project_id']}/nodes/{node['node_id']}/files/{path}", raw=True)
+        data = node_file_access(api, p, node, args.server_url, lambda: api.get(
+            f"/projects/{p['project_id']}/nodes/{node['node_id']}/files/{path}", raw=True))
     except RuntimeError as e:
         if "404" in str(e):
             die(f"{args.node} has no /{path}. On {args.node} run ./deliver.py first.")
@@ -636,7 +669,8 @@ def cmd_put(api, args, settings):
         die(f"No node '{args.node}' in {args.project}")
     data = Path(args.file).read_bytes()
     path = args.path.lstrip("/")
-    api.post(f"/projects/{p['project_id']}/nodes/{node['node_id']}/files/{path}", data=data)
+    node_file_access(api, p, node, args.server_url, lambda: api.post(
+        f"/projects/{p['project_id']}/nodes/{node['node_id']}/files/{path}", data=data))
     ok(f"{args.file} -> {args.node}:/{path} ({len(data)} bytes)")
     if path == "root/delivery.tgz" and args.node == "netauto":
         print("  On netauto:  tar xzf /root/delivery.tgz -C /root/cgr   (overwrites the files it contains)")
