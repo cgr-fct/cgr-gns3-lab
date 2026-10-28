@@ -12,6 +12,7 @@ Keep the GNS3 GUI open while you use it.
   python tools/cgr_lab.py stop lab00-first-contact
   python tools/cgr_lab.py delete lab00-first-contact
   python tools/cgr_lab.py fetch lab05-evpn          # netauto:/root/delivery.tgz -> delivery-lab05-evpn.tgz
+  python tools/cgr_lab.py put lab05-evpn delivery-g07.tgz            # -> netauto:/root/delivery.tgz
   python tools/cgr_lab.py exec lab05-evpn h1 "ping -c 3 192.168.10.13"   # run a command via the console
 
 Connection settings (first match wins):
@@ -628,6 +629,19 @@ def cmd_fetch(api, args, settings):
     ok(f"{args.node}:/{path} -> {out.resolve()} ({len(data)} bytes)")
 
 
+def cmd_put(api, args, settings):
+    """Copy a local file into a lab node (default: a delivery into netauto:/root/delivery.tgz)."""
+    p, nodes = project_nodes(api, args.project)
+    node = next((n for n in nodes if n["name"] == args.node), None) or \
+        die(f"No node '{args.node}' in {args.project}")
+    data = Path(args.file).read_bytes()
+    path = args.path.lstrip("/")
+    api.post(f"/projects/{p['project_id']}/nodes/{node['node_id']}/files/{path}", data=data)
+    ok(f"{args.file} -> {args.node}:/{path} ({len(data)} bytes)")
+    if path == "root/delivery.tgz" and args.node == "netauto":
+        print("  On netauto:  tar xzf /root/delivery.tgz -C /root/cgr   (overwrites the files it contains)")
+
+
 # --------------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description="Build and manage CGR GNS3 labs")
@@ -646,6 +660,11 @@ def main():
     for c in ("start", "stop", "delete", "consoles"):
         s = sub.add_parser(c, help=f"{c} a lab project")
         s.add_argument("project")
+    s = sub.add_parser("put", help="copy a local file into a lab node (e.g. a delivery into netauto)")
+    s.add_argument("project")
+    s.add_argument("file")
+    s.add_argument("--node", default="netauto")
+    s.add_argument("--path", default="/root/delivery.tgz", help="destination on the node (persistent folders only)")
     s = sub.add_parser("exec", help="run a shell command on node(s) through the console")
     s.add_argument("project")
     s.add_argument("nodes", help="node name, or several separated by commas")
@@ -664,7 +683,7 @@ def main():
     api = GNS3(server, user, password)
     handlers = {"check": cmd_check, "templates": cmd_templates,
                 "build": cmd_build, "start": cmd_start, "stop": cmd_stop, "delete": cmd_delete,
-                "consoles": cmd_consoles, "fetch": cmd_fetch, "exec": cmd_exec}
+                "consoles": cmd_consoles, "fetch": cmd_fetch, "exec": cmd_exec, "put": cmd_put}
     try:
         handlers[args.cmd](api, args, settings)
     except RuntimeError as e:
