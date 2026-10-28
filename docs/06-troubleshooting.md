@@ -34,6 +34,25 @@ GNS3 does not start the UTM VM for you — start it in UTM first, then GNS3. Che
 *Preferences → Server → Remote servers*. The UTM display window may stay black — the console is in
 the serial terminal window.
 
+### macOS: a node console says "No route to host" (but `ping` to the GNS3 VM works)
+macOS (15 and later) blocks apps without the *Local Network* permission, and reports it as "No
+route to host". `ping` and `nc` are Apple's and are not blocked, so the VM looks reachable.
+*System Settings → Privacy & Security → Local Network* → turn on **GNS3** and your terminal app
+(**Terminal**, or iTerm), then quit and reopen both. Or, in GNS3, *Preferences → General →
+Console applications → Edit* → **iTerm2**. Check with `nc -vz <VM IP> <console port>`
+("succeeded" = the node is fine). A console stays blank until you press **Enter**.
+
+### `cgr_lab.py put` / `fetch`: 403
+A running Docker node's files belong to root and the GNS3 server (user gns3) can't open them.
+`cgr_lab.py` then stops the node for a moment, copies the file and starts it again; with an old
+`cgr_lab.py` (`git pull`), stop the node in GNS3, run `put`/`fetch`, start it.
+
+### `cgr_lab.py build --force`: `DELETE /projects/… -> 500`
+The old project has files GNS3 can't remove (usually after containers were removed with
+`docker rm -f`). In the GNS3 VM shell: `sudo rm -rf /opt/gns3/projects/<project id from the
+error>` and `sudo systemctl restart gns3`, then build again. Stop or delete labs with GNS3 or
+`cgr_lab.py`, not with `docker rm`.
+
 ### `cgr_lab.py check` uses the wrong compute / says Docker is not available
 It prefers the GNS3 VM, then any other connected server with Docker (e.g. the VirtualBox VM added
 as a remote server), then the local server. `check` lists them all; pick one explicitly with
