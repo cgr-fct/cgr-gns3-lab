@@ -1,7 +1,9 @@
-# Lab 04 — BGP: a bank and its provider
+# Lab 04 — BGP as code: a bank and its provider (2nd project, exercise 1)
 
 **Topics:** OSPF inside each AS, iBGP full mesh, eBGP between ASes, next-hop reachability,
-route aggregation, local preference for inbound and outbound traffic selection.
+route aggregation, local preference for inbound and outbound traffic selection — configured
+**only through the automation pipeline**: a YAML intent validated against the YANG model,
+pushed over **RESTCONF**, and checked by a script that reads the routers' state.
 
 ![Lab 04 topology](figure.png)
 
@@ -39,7 +41,7 @@ netauto: 192.168.200.254.
 
 ## Requirements
 
-Implement and verify:
+The network must meet these requirements (the same as last year's BGP scenario):
 
 1. Use the addressing scheme above.
 2. Configure OSPF inside the Bank network with a single area (area 0).
@@ -57,47 +59,69 @@ Implement and verify:
 11. Test connectivity between the BGP-announced networks of R5 and R2
     (`ping -I 10.20.0.1 172.16.4.1` on R2, `traceroute -s …`).
 
-## How to configure
+## The rule: no CLI configuration
 
-Interfaces and loopbacks in `/etc/network/interfaces` (`ifreload -a`), OSPF and BGP in `vtysh` —
-see the **[cheat sheet](../CHEATSHEET.md)**. A few reminders:
+In this exercise the routers are configured **only by automation**, from **netauto**
+(`/root/cgr`): an intent file pushed over RESTCONF. `vtysh`, `ip`, `ping` and `traceroute`
+on the routers are fine for *looking*, never for configuring. (The routers refuse a push that
+would remove something configured by hand, so mixing the two shows.) See
+[automation/README.md](../../automation/README.md) for the model, the RESTCONF server and the
+tools; `pyang -f tree yang/cgr-device@2026-09-15.yang` shows what the model can express.
 
+## Part A — the intent
+
+Write **one** intent file, `intent/lab04.yml`, with the six routers (interfaces, loopbacks, OSPF,
+BGP) and push it:
+
+```bash
+cd /root/cgr
+./apply_intent.py intent/lab04.yml --check             # validate against the YANG model only
+./apply_intent.py intent/lab04.yml --restconf --diff   # what would change on each router
+./apply_intent.py intent/lab04.yml --restconf          # push (one RESTCONF PUT per router)
+./apply_intent.py intent/lab04.yml --restconf --diff   # again: "no changes" everywhere = idempotent
 ```
-router bgp 65500
- bgp router-id 10.1.1.1
- neighbor 10.2.2.2 remote-as internal
- neighbor 10.2.2.2 update-source lo
- neighbor 192.168.14.2 remote-as 64600
- address-family ipv4 unicast
-  network 10.20.0.0/24
-  aggregate-address 10.20.0.0/22 summary-only
-  neighbor 10.2.2.2 next-hop-self
-  neighbor 192.168.14.2 route-map PREFER-R4 in
-!
-route-map PREFER-R4 permit 10
- set local-preference 200
+
+BGP in the model: `bgp: {asn, router-id, network: [...], aggregate: [{prefix, summary-only}],
+neighbor: [{address, remote-as, update-source, next-hop-self, local-preference-in,
+as-path-prepend-out}]}`. `network` only announces a prefix that is in the routing table with
+exactly that mask. The routers use FRR's *datacenter* defaults (eBGP sessions exchange routes
+without an explicit policy).
+
+## Part B — the check script
+
+Write `scripts/check_bgp.py`: a program that reads the **state** of the routers over RESTCONF
+and checks **each requirement** (2–11), printing PASS/FAIL per check and exiting with 0 only
+if all pass. `scripts/check_bgp.py` is started for you (it checks requirement 6); the state
+the routers expose:
+
+```bash
+./restconf.py R4 get state/route --content nonconfig          # routing table: prefix, protocol, next-hop
+./restconf.py R4 get state/bgp-neighbor --content nonconfig   # address, remote-as, state, prefixes-received
+./restconf.py R1 get state/ospf-neighbor --content nonconfig
+./restconf.py R2 get state/interface --content nonconfig
 ```
 
-* `network` only announces a prefix that is **in the routing table** with exactly that mask
-  (the loopback subnets are, as connected routes).
-* The routers use FRR's *datacenter* defaults: eBGP sessions exchange routes without an
-  explicit policy (with *traditional* defaults you would need `no bgp ebgp-requires-policy`).
-* Useful: `show bgp summary`, `show bgp ipv4 unicast`, `show bgp ipv4 unicast 10.20.0.0/22`,
-  `show ip route bgp`, `show ip ospf neighbor`.
+For requirement 11 the script may also log in over SSH (`cgrlib.Device`, see
+`collect.py`) to run `ping`/`traceroute` — careful: a router answers a traceroute from the
+address of its interface **towards the source**, which is not always the link the probe came in on.
+
+## Part C — change and failure
+
+1. **Change request.** The Bank adds four networks on R2: `10.20.4.1/24`, `10.20.5.1/24`,
+   `10.20.6.1/24`, `10.20.7.1/24`. It must still announce **a single summary**, now covering
+   the eight networks. Make the change in the intent file only and push it; your check script
+   must pass again (adapt it if needed).
+2. **Failure.** Disable the R3–R4 link **through RESTCONF** (interface `enabled: false` — a
+   PATCH of `interface=swp3` on R3). Before you do it, write down which path R4, R5 and R2 will
+   use and whether requirement 11 still holds; then check. Enable it again.
+3. **Inbound traffic.** The Bank wants the Provider's traffic to enter through **R1** instead
+   of R3, configuring **only its own routers**. Try it with `as-path-prepend-out` on R3 and
+   explain what happens (and what the Provider would have to offer for the Bank to succeed).
 
 ## What to deliver
 
-The configuration of the six routers (`./collect.py all` on netauto), the BGP tables of R1, R4
-and R5, the traceroutes of requirement 11, and a short explanation of how you met each
-requirement (in particular 7–10, and why next-hop reachability matters for iBGP).
-
-## Automation corner
-
-BGP is part of the `cgr-device` model (`bgp: {asn, router-id, network, aggregate, neighbor:
-[{address, remote-as, update-source, next-hop-self, local-preference-in, as-path-prepend-out}]}`).
-Configure the Provider AS (R4, R5, R6) **only by automation** — an intent file pushed with
-`./apply_intent.py`, or RESTCONF requests with `./restconf.py` / `curl` — and read the BGP
-sessions back with `./restconf.py R4 get state/bgp-neighbor --content nonconfig`.
-If you already configured R4–R6 by CLI, `./apply_intent.py intent/provider.yml --import R4 R5 R6`
-gives you a starting intent file (route-maps other than a single `set local-preference` or an
-own-AS prepend are listed as notes).
+Only your files: `intent/lab04.yml` (final version, after the change request) and
+`scripts/check_bgp.py` (and any other script you wrote in `scripts/`). On netauto:
+`./deliver.py lab04`, then on your computer `python tools/cgr_lab.py fetch lab04-bgp`.
+In the discussion your intent is pushed to a fresh copy of the lab and your script is run;
+be ready to change the intent live and to predict the routes before you look at them.
