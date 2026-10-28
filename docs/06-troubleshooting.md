@@ -66,6 +66,9 @@ The kernel modules are not loaded in the GNS3 VM (or on your Linux machine). GNS
 *Shell* (Linux: a terminal) → `sudo modprobe -a bonding 8021q dummy macvlan vxlan vrf`, then `ifreload -a`
 again (Lab 05: `./deploy.py` again).
 
+The modules are lost when the GNS3 VM restarts. To load them at every boot (once per VM):
+`printf "bonding\n8021q\ndummy\nmacvlan\nvxlan\nvrf\n" | sudo tee /etc/modules-load.d/cgr.conf`.
+
 ### `ifreload -a` prints errors
 Read the message — it names the interface and the option. Typical causes: option lines not
 indented, a port listed in `bridge-ports` that is also a bond member, a typo in an option name.

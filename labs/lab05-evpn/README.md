@@ -13,7 +13,9 @@ python tools/cgr_lab.py build labs/lab05-evpn --start
 
 The leaves need the kernel's VXLAN and VRF support. If `ifreload -a` on a leaf says
 `Unknown device type` or `Operation not supported`, open the GNS3 VM console → *Shell* (Linux:
-a terminal) and run `sudo modprobe -a vxlan vrf bonding 8021q dummy macvlan`.
+a terminal) and run `sudo modprobe -a vxlan vrf bonding 8021q dummy macvlan`. The modules are lost when
+the VM restarts; to load them at every boot, once per VM:
+`printf "vxlan\nvrf\nbonding\n8021q\ndummy\nmacvlan\n" | sudo tee /etc/modules-load.d/cgr.conf`.
 
 ## 1. The data center
 
