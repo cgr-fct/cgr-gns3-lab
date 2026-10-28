@@ -1,0 +1,24 @@
+frr defaults datacenter
+hostname {{ name }}
+log syslog informational
+service integrated-vtysh-config
+!
+{# TODO: map each tenant's VRF to its L3VNI:   vrf RED / vni 5001 / exit-vrf #}
+router bgp {{ node.asn }}
+ bgp router-id {{ node.loopback }}
+ neighbor SPINES peer-group
+ neighbor SPINES remote-as external
+{% for l in links %}
+ neighbor {{ l.peer_ip }} peer-group SPINES
+ neighbor {{ l.peer_ip }} description {{ l.peer }}
+{% endfor %}
+ !
+ address-family ipv4 unicast
+  network {{ node.loopback }}/32
+ exit-address-family
+ {# TODO: address-family l2vpn evpn - activate the spines and advertise the local VNIs #}
+exit
+!
+{# TODO: one BGP instance per tenant VRF (router bgp ASN vrf RED) that advertises the VRF's
+   connected networks in EVPN (address-family ipv4 unicast + address-family l2vpn evpn) #}
+end

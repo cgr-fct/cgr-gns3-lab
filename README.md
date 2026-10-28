@@ -38,7 +38,8 @@ Stuck? → [Troubleshooting](docs/06-troubleshooting.md). How it fits together �
 | [01 Campus network](labs/lab01-campus/README.md) | VLANs, trunks, LACP, STP, SVIs, DHCP server + relay, OSPF / IS-IS between pods, summarisation, default route, automation | 8 switches/routers, 6 Linux hosts |
 | [02 OSPF](labs/lab02-ospf/README.md) | multi-area OSPF, DR election, summarisation, default route, the hidden issue | 7 routers, 1 switch |
 | [03 IS-IS](labs/lab03-isis/README.md) | levels, areas, attached bit, metrics, comparison with OSPF | 4 routers, 3 PCs |
-| [04 BGP](labs/lab04-bgp/README.md) | OSPF inside ASes, iBGP full mesh, eBGP, aggregation, local preference | 6 routers |
+| [04 BGP as code](labs/lab04-bgp/README.md) | OSPF inside ASes, iBGP full mesh, eBGP, aggregation, local preference — configured by intent + RESTCONF, checked by script | 6 routers |
+| [05 EVPN-VXLAN fabric](labs/lab05-evpn/README.md) | leaf-spine, eBGP underlay + ECMP, BGP EVPN, L2/L3 VNIs, symmetric IRB, anycast gateway, tenants (VRFs) — configured from a data model + Jinja2 templates | 2 spines, 4 leaves, 6 hosts |
 
 Every lab has an **automation station** (`netauto`) on an out-of-band management network, and
 every router/switch runs a **RESTCONF server** for the YANG model `cgr-device`. The

@@ -1,0 +1,24 @@
+frr defaults datacenter
+hostname {{ name }}
+log syslog informational
+service integrated-vtysh-config
+!
+router bgp {{ node.asn }}
+ bgp router-id {{ node.loopback }}
+ neighbor LEAVES peer-group
+ neighbor LEAVES remote-as external
+{% for l in links %}
+ neighbor {{ l.peer_ip }} peer-group LEAVES
+ neighbor {{ l.peer_ip }} description {{ l.peer }}
+{% endfor %}
+ !
+ address-family ipv4 unicast
+  network {{ node.loopback }}/32
+ exit-address-family
+ !
+ address-family l2vpn evpn
+  neighbor LEAVES activate
+ exit-address-family
+exit
+!
+end

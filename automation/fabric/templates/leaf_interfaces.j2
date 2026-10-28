@@ -1,0 +1,31 @@
+{# Data-plane part of /etc/network/interfaces of a leaf (deploy.py keeps the management part).
+   Variables: name, node, links, networks, tenants, fabric  (./generate.py --show leaf1) #}
+auto lo
+iface lo inet loopback
+    address {{ node.loopback }}/32
+
+{# ---- underlay: routed links to the spines #}
+{% for l in links %}
+auto {{ l.port }}
+iface {{ l.port }}
+    address {{ l.address }}
+    # to {{ l.peer }} {{ l.peer_port }}
+
+{% endfor %}
+{# ---- access ports (untagged, one VLAN each) #}
+{% for a in node.access %}
+auto {{ a.port }}
+iface {{ a.port }}
+    bridge-access {{ a.vlan }}
+
+{% endfor %}
+{# ---- TODO: the overlay. ifupdown2 stanzas you will need (see the statement, Section 4):
+   * one VRF per tenant:                 iface RED / vrf-table auto
+   * one VXLAN interface per VNI (the L2VNIs of the local networks and the L3VNI of each
+     local tenant):                      vxlan-id, vxlan-local-tunnelip, bridge-access,
+                                         bridge-learning off, bridge-arp-nd-suppress on (L2VNIs)
+   * one VLAN-aware bridge with the access ports and the VXLAN interfaces:
+                                         bridge-vlan-aware yes, bridge-ports, bridge-vids, bridge-stp off
+   * the SVIs: the anycast gateway of each local network (address, hwaddress, arp-accept on,
+     vrf) and the SVI of each tenant's L3VNI VLAN (vrf only):  vlan-id, vlan-raw-device bridge
+#}

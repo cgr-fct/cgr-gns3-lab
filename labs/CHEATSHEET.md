@@ -156,6 +156,25 @@ A write that would remove configuration typed by hand is refused with `409 resou
 Keep it: `./apply_intent.py <file> --import <device>` on netauto (then push). Drop it: add
 `?force=true` to the URL.
 
+## EVPN-VXLAN (Lab 05)
+
+```
+show bgp summary                              # IPv4 (underlay) and L2VPN EVPN sessions
+show evpn vni                                 # VNIs: type L2/L3, VXLAN interface, remote VTEPs, VRF
+show evpn vni 10010                           # one VNI in detail (flood list = remote VTEPs)
+show bgp l2vpn evpn route type multicast      # type 3 (inclusive multicast): BUM flooding
+show bgp l2vpn evpn route type macip          # type 2: MAC / MAC+IP of the hosts
+show bgp l2vpn evpn route type prefix         # type 5: IP prefixes of the tenants
+show evpn mac vni 10010                       # local / remote MACs
+show evpn arp-cache vni 10010                 # neighbours known to EVPN (ARP suppression)
+show vrf ; show ip route vrf RED
+```
+```bash
+ip -d link show vni10010                      # VXLAN device: VNI, local VTEP, nolearning
+bridge vlan show ; bridge fdb show | grep vni # VLAN-aware bridge, MACs behind VXLAN tunnels
+ip route show vrf RED ; ip neigh show vrf RED
+```
+
 ## Linux hosts (UserUbuntu*, servers)
 
 The hosts are small Debian containers; the data port is `eth1`.

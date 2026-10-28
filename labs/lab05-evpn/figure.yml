@@ -1,0 +1,35 @@
+title: "Lab 05 — EVPN-VXLAN data-center fabric"
+size: [1200, 720]
+note: "Hosts 192.168.x.y/24, gateway .1  ·  every leaf: swp1 → spine1, swp2 → spine2  ·  management 192.168.200.0/24 (not shown)"
+groups:
+  - {label: "Spines", x: 200, y: 60, w: 800, h: 150, color: blue, label_at: tl}
+  - {label: "Leaves (one AS and one VTEP each)", x: 40, y: 290, w: 1120, h: 140, color: grey, label_at: tl}
+  - {label: "Hosts (tenant, VLAN, address)", x: 40, y: 500, w: 1120, h: 180, color: orange, label_at: bl}
+nodes:
+  spine1: {type: router, x: 420, y: 135, label: left}
+  spine2: {type: router, x: 780, y: 135, label: right}
+  leaf1: {type: switch, x: 180, y: 370, label: left}
+  leaf2: {type: switch, x: 460, y: 370, label: left}
+  leaf3: {type: switch, x: 740, y: 370, label: right}
+  leaf4: {type: switch, x: 1020, y: 370, label: right}
+  h1: {type: host, x: 105, y: 590, label: below, sub: "RED v10 .10.11"}
+  h5: {type: host, x: 270, y: 590, label: below, sub: "BLUE v30 .10.15"}
+  h2: {type: host, x: 460, y: 590, label: below, sub: "RED v20 .20.12"}
+  h3: {type: host, x: 740, y: 590, label: below, sub: "RED v10 .10.13"}
+  h4: {type: host, x: 935, y: 590, label: below, sub: "RED v20 .20.14"}
+  h6: {type: host, x: 1100, y: 590, label: below, sub: "BLUE v30 .10.16"}
+links:
+  - {a: leaf1, b: spine1, pa: "swp1", pb: "swp1", pdist: 48}
+  - {a: leaf1, b: spine2, pa: "swp2", pb: "swp1", pdist: 48}
+  - {a: leaf2, b: spine1, pa: "swp1", pb: "swp2", pdist: 48}
+  - {a: leaf2, b: spine2, pa: "swp2", pb: "swp2", pdist: 48}
+  - {a: leaf3, b: spine1, pa: "swp1", pb: "swp3", pdist: 48}
+  - {a: leaf3, b: spine2, pa: "swp2", pb: "swp3", pdist: 48}
+  - {a: leaf4, b: spine1, pa: "swp1", pb: "swp4", pdist: 48}
+  - {a: leaf4, b: spine2, pa: "swp2", pb: "swp4", pdist: 48}
+  - {a: leaf1, b: h1, pa: "swp3", pb: "eth1", pdist: 30}
+  - {a: leaf1, b: h5, pa: "swp4", pb: "eth1", pdist: 30}
+  - {a: leaf2, b: h2, pa: "swp3", pb: "eth1", pdist: 30}
+  - {a: leaf3, b: h3, pa: "swp3", pb: "eth1", pdist: 30}
+  - {a: leaf4, b: h4, pa: "swp3", pb: "eth1", pdist: 30}
+  - {a: leaf4, b: h6, pa: "swp4", pb: "eth1", pdist: 30}

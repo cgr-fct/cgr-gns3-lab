@@ -1,0 +1,12 @@
+{# Data-plane part of /etc/network/interfaces of a spine (the management part is kept) #}
+auto lo
+iface lo inet loopback
+    address {{ node.loopback }}/32
+
+{% for l in links %}
+auto {{ l.port }}
+iface {{ l.port }}
+    address {{ l.address }}
+    # to {{ l.peer }} {{ l.peer_port }}
+
+{% endfor %}

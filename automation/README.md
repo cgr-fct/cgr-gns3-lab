@@ -243,7 +243,30 @@ for name, dev in load_inventory().items():
     print(f"{name}: {len(state.get('route', []))} routes, BGP up with {up}")
 ```
 
-## 5. Extending the model (exercise)
+## 5. A fabric from a data model and templates (`fabric/`, Lab 05)
+
+Not everything goes through the YANG model: the EVPN-VXLAN fabric of Lab 05 (VXLAN interfaces,
+VRFs, VLAN-aware bridge, BGP EVPN) is configured **template-first** — a YAML plan of the whole
+fabric and one Jinja2 template per device role:
+
+| | |
+|---|---|
+| `fabric/fabric.yml` | the plan: tenants (VRF, L3VNI, networks), spines, leaves (ASN, loopback/VTEP, uplinks, access ports) |
+| `fabric/templates/{spine,leaf}_{interfaces,frr.conf}.j2` | the templates |
+| `fabric/generate.py` | checks the plan (duplicate ASNs/VNIs/VLANs/loopbacks, /31 links, ports used twice, VLANs without a network) and renders `fabric/configs/<node>/` |
+| `fabric/deploy.py` | pushes them over SSH: keeps the management part of `/etc/network/interfaces`, `ifreload -a`, `frr-reload`; `--dry-run` shows the interface diff and FRR's own *lines to delete/add* |
+
+Compare with the model-driven path above: no validation of types, no datastore, no RESTCONF —
+quicker to extend, but every check is yours (that is what `generate.py` does for this fabric).
+
+## 6. Handing in your files
+
+`./deliver.py lab04` (intent files + `scripts/`) or `./deliver.py lab05` (`fabric/` plan,
+templates, configs) packs them into `/root/delivery.tgz`; on your computer
+`python tools/cgr_lab.py fetch <lab-project>` copies it out. `scripts/check_bgp.py` is the
+starting point of the Lab 04 check script.
+
+## 7. Extending the model (exercise)
 
 Add a feature end to end — e.g. static routes:
 1. add a `list static-route` to `yang/cgr-device@2026-09-15.yang` and check it with

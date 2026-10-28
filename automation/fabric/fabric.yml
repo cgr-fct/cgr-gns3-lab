@@ -1,0 +1,30 @@
+# fabric.yml - the PLAN of the Lab 05 data-center fabric (your source of truth).
+# generate.py checks it and renders the device files with the templates in templates/.
+# Complete it following the Lab 05 statement: the parts marked TODO are yours.
+
+anycast_gateway_mac: "00:00:5e:00:01:01"     # the gateway MAC, the same on every leaf
+
+tenants:
+  RED:
+    l3vni: 5001          # VNI of the tenant's VRF (routed traffic between leaves)
+    l3vlan: 4001         # local VLAN that carries that VNI on each leaf
+    networks:
+      - {vlan: 10, vni: 10010, gateway: 192.168.10.1/24}
+      # TODO: the second RED network (statement, Table 2)
+  # TODO: tenant BLUE
+
+spines:
+  spine1: {asn: 65000, loopback: 10.0.0.1}
+  spine2: {asn: 65000, loopback: 10.0.0.2}
+
+leaves:
+  leaf1:
+    asn: 65101
+    loopback: 10.0.0.11          # also the leaf's VTEP address
+    uplinks:                     # port, spine, the spine's port, this side's /31
+      - {port: swp1, peer: spine1, peer_port: swp1, address: 10.1.1.1/31}
+      - {port: swp2, peer: spine2, peer_port: swp1, address: 10.2.1.1/31}
+    access:                      # host ports: untagged, one VLAN each
+      - {port: swp3, vlan: 10}   # h1
+      # TODO: h5
+  # TODO: leaf2, leaf3, leaf4

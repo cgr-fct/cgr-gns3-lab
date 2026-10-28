@@ -107,6 +107,35 @@ redistributed routes).
   (interfaces, routes, OSPF/BGP neighbours), 400/401/404/405/409/415 error reports, YANG
   validation errors, hostname changes, datastore shared with SSH pushes, Ansible `uri` playbooks.
 
+## 2nd project 2026/27: Lab 04 "BGP as code" and Lab 05 EVPN-VXLAN (verified Oct 2026)
+
+Solutions and grading tools are in the instructor package (`solutions/lab04-bgp`,
+`solutions/lab05-evpn`, `tests/check_lab05.py`, `project2-evaluation.md`).
+
+* **Lab 04** (GNS3 2.2.54 + Docker, local netauto image): reference intent pushed by RESTCONF, the
+  reference check script passes 25/25; the change request (R2 Lo204–207, one /21) applies and
+  passes; pushing base ↔ change repeatedly works; R3–R4 link disabled by RESTCONF → R4 uses R1,
+  ping still works; `as-path-prepend-out 3` on R3 does **not** move the inbound traffic (R4's
+  local preference wins: `best (Local Pref)` with AS path 65500 ×4).
+* **Kit fixes found on the way:** (1) the hand-made-configuration guard refused every second push
+  to a BGP router, because FRR 10.7 writes `use-underlays-nexthop-weight` (and, after a reload,
+  `no bgp deterministic-med`) by itself → ignored in `cgrimport.py` (`IGNORED_FRR_SUB`); needs the
+  new images. (2) `cgr_lab.py delete` timed out (60 s) closing projects with many nodes → 600 s.
+* **Traceroute through asymmetric BGP paths:** each router answers from the address of its
+  interface towards the source, so R2 → R5 shows R4 as 192.168.34.2 although the probe entered
+  on R1–R4 — the reference check identifies hops by router.
+* **Lab 05 data plane** (L2VNI, symmetric IRB, anycast gateway, ECMP, isolation, overlapping
+  BLUE/RED subnet): verified with the **arm64** cgr-frr image on an Ubuntu 6.8 arm64 kernel
+  (rootless namespaces, the reference configs from `generate.py`): all 8 ping tests as expected.
+  **Lab 05 in GNS3** (amd64 sandbox): build, generate/deploy, underlay ECMP, EVPN sessions and VNIs
+  all pass `check_lab05.py` (16/16 control-plane checks); the sandbox kernel had no VRF/VLAN-aware
+  bridge, so the data plane there could not be tested — run `check_lab05.py` once in a real GNS3 VM.
+* **Silent hosts and the anycast gateway:** without `arp-accept on` on the gateway SVIs, a host
+  that never sent anything is unreachable from other subnets when ECMP picks the "wrong" leaf
+  (its ARP request carries the shared gateway MAC, so the reply is consumed by the host's own
+  leaf, which does not learn it). With `arp-accept on` the host's leaf learns it from that reply
+  and advertises a type-2 MAC/IP route. Good discussion question.
+
 **Not verified — please check once on real hardware:**
 
 - [ ] macOS Apple Silicon: GNS3 2.2.54 + ARM64 GNS3 VM on VMware Fusion; Lab 00 end to end.
