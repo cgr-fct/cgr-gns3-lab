@@ -19,6 +19,9 @@ done
 # 2. Kernel settings for a router/switch
 sysctl -qw net.ipv4.ip_forward=1 net.ipv6.conf.all.forwarding=1 2>/dev/null
 sysctl -qw net.ipv4.conf.all.rp_filter=0 net.ipv4.conf.default.rp_filter=0 2>/dev/null
+# the ports were created in the GNS3 VM and keep its reverse-path filter (Ubuntu: loose), which
+# drops packets from sources without a route (e.g. traceroute answers from the eBGP links)
+for f in /proc/sys/net/ipv4/conf/*/rp_filter; do echo 0 > "$f"; done 2>/dev/null
 
 # 3. Default interfaces file (GNS3 normally writes one; keep it if present)
 if [ ! -s /etc/network/interfaces ]; then
